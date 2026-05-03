@@ -1,3 +1,30 @@
+### Secrets & Keys — JANGAN PERNAH COMMIT
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.asc          # GPG exported keys
+*_rsa
+*_ed25519
+id_*
+!id_*.go       # kecuali Go source files
+
+# Git-crypt — symmetric key export
+git-crypt-key
+*.git-crypt.key
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Credentials
+credentials.json
+service-account.json
+*.secret
+
 ### macOS
 # Finder metadata
 .DS_Store
@@ -6,7 +33,7 @@
 ._*
 
 # Custom folder icons
-Icon
+Icon
 
 # Volume root files
 .DocumentRevisions-V100
