@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { featuredListings } from '~/data/listings'
+import { listings } from '~/data/listings'
+
+const visibleCount = ref(6)
+const increment = 6
+
+const visibleListings = computed(() => listings.slice(0, visibleCount.value))
+
+function loadMore() {
+  visibleCount.value = Math.min(visibleCount.value + increment, listings.length)
+}
 </script>
 
 <template>
@@ -13,19 +22,19 @@ import { featuredListings } from '~/data/listings'
     <main class="listings-section">
       <div class="listings-header">
         <h2 class="listings-title">Properti Pilihan</h2>
-        <p class="listings-count">{{ featuredListings.length }} properti ditemukan</p>
+        <p class="listings-count">{{ visibleListings.length }} dari {{ listings.length }} properti</p>
       </div>
 
       <div class="listings-grid">
         <ListingCard
-          v-for="(listing, i) in featuredListings"
+          v-for="(listing, i) in visibleListings"
           :key="i"
           v-bind="listing"
         />
       </div>
 
-      <div class="load-more">
-        <button class="btn-load">Muat Lebih Banyak</button>
+      <div v-if="visibleCount < listings.length" class="load-more">
+        <button class="btn-load" @click="loadMore">Muat Lebih Banyak</button>
       </div>
     </main>
 
