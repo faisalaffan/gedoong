@@ -2,12 +2,28 @@
 const activeType = ref('Semua')
 const sort = ref('terbaru')
 
-const types = ['Semua', 'Rumah', 'Apartemen', 'Kost', 'Ruko', 'Tanah']
+const types = ['Semua', 'Jual', 'Sewa']
 const sortOptions = [
   { value: 'terbaru', label: 'Terbaru' },
   { value: 'harga-rendah', label: 'Harga Terendah' },
   { value: 'harga-tinggi', label: 'Harga Tertinggi' },
 ]
+
+const emit = defineEmits<{
+  'update:type': [value: string]
+  'update:sort': [value: string]
+}>()
+
+function onTypeChange(type: string) {
+  activeType.value = type
+  emit('update:type', type)
+}
+
+function onSortChange(e: Event) {
+  const value = (e.target as HTMLSelectElement).value
+  sort.value = value
+  emit('update:sort', value)
+}
 </script>
 
 <template>
@@ -19,14 +35,14 @@ const sortOptions = [
           :key="type"
           class="chip"
           :class="{ active: activeType === type }"
-          @click="activeType = type"
+          @click="onTypeChange(type)"
         >
           {{ type }}
         </button>
       </div>
       <div class="sort-group">
         <label class="sort-label">Urutkan:</label>
-        <select v-model="sort" class="sort-select">
+        <select :value="sort" @change="onSortChange" class="sort-select">
           <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
             {{ opt.label }}
           </option>
