@@ -20,8 +20,8 @@ const links = [
           {{ link.label }}
         </NuxtLink>
         <div class="nav-actions">
-          <button class="btn-ghost">Masuk</button>
-          <button class="btn-primary">Daftar Gratis</button>
+          <NuxtLink to="/masuk" class="btn-ghost">Masuk</NuxtLink>
+          <NuxtLink to="/daftar" class="btn-primary">Daftar Gratis</NuxtLink>
         </div>
       </nav>
 
@@ -159,7 +159,7 @@ const links = [
 
   .nav-links.open { display: flex; }
   .nav-actions { margin-left: 0; flex-direction: column; width: 100%; }
-  .nav-actions button { width: 100%; }
+  .nav-actions :deep(a) { width: 100%; text-align: center; text-decoration: none; }
   .hamburger { display: flex; }
 }
 </style>

@@ -48,3 +48,5 @@ CLAUDE.md
 .claude*
 gan-harness
 .superpowers
+.playwright-mcp
+

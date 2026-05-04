@@ -73,9 +73,7 @@ function onFilterSortChange(sort: string) {
 </script>
 
 <template>
-  <div class="cari-page">
-    <NavbarPublic />
-
+  <div>
     <SearchHero />
 
     <!-- Search bar -->
@@ -140,17 +138,10 @@ function onFilterSortChange(sort: string) {
         </button>
       </nav>
     </main>
-
-    <FooterPublic />
   </div>
 </template>
 
 <style scoped>
-.cari-page {
-  min-height: 100vh;
-  background: #fafaf8;
-}
-
 /* Search section */
 .search-section {
   max-width: 800px;

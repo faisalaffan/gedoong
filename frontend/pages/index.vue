@@ -12,9 +12,7 @@ function loadMore() {
 </script>
 
 <template>
-  <div class="home">
-    <NavbarPublic />
-
+  <div>
     <SearchHero />
 
     <FilterBar />
@@ -37,17 +35,10 @@ function loadMore() {
         <button class="btn-load" @click="loadMore">Muat Lebih Banyak</button>
       </div>
     </main>
-
-    <FooterPublic />
   </div>
 </template>
 
 <style scoped>
-.home {
-  min-height: 100vh;
-  background: #fafaf8;
-}
-
 .listings-section {
   max-width: 1280px;
   margin: 0 auto;

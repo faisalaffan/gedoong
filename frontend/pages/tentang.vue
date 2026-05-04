@@ -1,7 +1,5 @@
 <template>
-  <div class="tentang-page">
-    <NavbarPublic />
-
+  <div>
     <!-- Hero -->
     <section class="about-hero">
       <h1 class="about-title">Gedoong: CRM Properti untuk Agen Independen Indonesia</h1>
@@ -66,17 +64,10 @@
         <button class="btn-outline-lg">Hubungi Kami</button>
       </div>
     </section>
-
-    <FooterPublic />
   </div>
 </template>
 
 <style scoped>
-.tentang-page {
-  min-height: 100vh;
-  background: #fafaf8;
-}
-
 /* Hero */
 .about-hero {
   text-align: center;
