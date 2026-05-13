@@ -10,7 +10,7 @@
 
 # Gedoong
 
-CRM for independent property agents in Indonesia. Listing management, client pipeline, commission tracking — lightweight tools to replace WhatsApp + spreadsheets.
+CRM untuk agen properti independen di Indonesia. Listing management, pipeline klien, komisi tracking — tools ringan pengganti WhatsApp + spreadsheet.
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white)](https://go.dev/)
 [![Nuxt](https://img.shields.io/badge/Nuxt-00DC82?style=flat&logo=nuxt.js&logoColor=white)](https://nuxt.com/)
@@ -21,30 +21,30 @@ CRM for independent property agents in Indonesia. Listing management, client pip
 
 ---
 
-## Why Gedoong?
+## Kenapa Gedoong?
 
-Tens of thousands of independent property agents in Indonesia still rely on WhatsApp and spreadsheets to manage listings, clients, and commissions. Existing CRMs are either too generic or too expensive.
+Agen properti independen di Indonesia — jumlahnya puluhan ribu — masih mengandalkan WhatsApp dan spreadsheet untuk mengelola listing, klien, dan komisi. CRM existing terlalu generik atau terlalu mahal.
 
-Gedoong is purpose-built for the property agent workflow: from client follow-ups to commission tracking, in a single lightweight tool.
+Gedoong dibangun khusus untuk workflow agen properti: dari follow-up klien sampai tracking komisi, dalam satu tools yang ringan dan mudah dipakai.
 
 ---
 
 ## Model
 
-Gedoong follows an **open-core** model — the core codebase is always open source under the MIT license. Premium features are available for advanced needs.
+Gedoong menganut **open core** — codebase inti selalu open source di bawah lisensi MIT. Fitur tambahan tersedia untuk kebutuhan yang lebih advanced.
 
-[Read the open-source strategy](docs/OPEN_SOURCE_STRATEGY.md)
+[Baca strategi open source](docs/OPEN_SOURCE_STRATEGY.md)
 
 ---
 
-## Monorepo Structure
+## Struktur Monorepo
 
 ```
 gedoong/
 ├── backend/          # Go — REST API
 ├── frontend/         # Nuxt — web dashboard
 ├── mobile/           # Flutter — iOS & Android
-└── docs/             # Documentation
+└── docs/             # Dokumentasi
 ```
 
 | Layer | Tech |
@@ -57,18 +57,18 @@ gedoong/
 
 ---
 
-## Features
+## Fitur
 
-- **Listing Management** — CRUD for property listings, active/sold/off-market statuses
-- **Client Pipeline** — Kanban deal tracker from prospect to closing
-- **Commission Tracking** — Calculation and disbursement status
-- **Notifications** — In-app + push follow-up reminders
+- **Listing Management** — CRUD listing properti, status aktif/terjual/off-market
+- **Pipeline Klien** — Kanban deal tracker dari prospek sampai closing
+- **Komisi Tracking** — Kalkulasi dan status pencairan komisi
+- **Notifikasi** — In-app + push reminder follow-up
 
 ---
 
 ## Getting Started
 
-> Project is in the planning phase. Code not yet available.
+> Proyek dalam tahap perencanaan. Kode belum tersedia.
 
 ```bash
 git clone https://github.com/faisalaffan/gedoong.git
@@ -86,8 +86,8 @@ cd mobile && flutter run
 
 ---
 
-## License
+## Lisensi
 
-Core codebase: [MIT](LICENSE). Documentation: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Core codebase: [MIT](LICENSE). Dokumentasi: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-See [Open Source Strategy](docs/OPEN_SOURCE_STRATEGY.md) for license boundary details.
+Lihat [Open Source Strategy](docs/OPEN_SOURCE_STRATEGY.md) untuk detail boundary lisensi.
