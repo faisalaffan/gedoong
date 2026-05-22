@@ -3,7 +3,7 @@
     <div class="auth-card glass-panel">
       <div class="auth-header">
         <NuxtLink to="/" class="auth-logo">
-          <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="auth-logo-img" />
+          <img :src="appLogo" :alt="appName + ' Logo'" class="auth-logo-img" />
         </NuxtLink>
         <h1>Selamat Datang Kembali</h1>
         <p>Lanjutkan mengelola portal properti Anda</p>
@@ -45,6 +45,14 @@
 </template>
 
 <script setup lang="ts">
+const config = useRuntimeConfig()
+const appName = config.public.appName
+const appLogo = config.public.appLogo
+
+useHead({
+  title: 'Masuk ke Dashboard'
+})
+
 const email = ref('')
 const password = ref('')
 </script>

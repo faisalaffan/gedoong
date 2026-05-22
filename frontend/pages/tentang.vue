@@ -1,8 +1,24 @@
+<script setup lang="ts">
+const config = useRuntimeConfig()
+const appName = config.public.appName
+const appDescription = config.public.appDescription
+const appBanner = config.public.appBanner
+
+useHead({
+  title: 'Tentang Kami'
+})
+
+const heroStyle = computed(() => ({
+  background: `linear-gradient(135deg, rgba(11, 28, 48, 0.9) 0%, rgba(0, 82, 204, 0.85) 50%, rgba(11, 28, 48, 0.95) 100%), url('${appBanner}') no-repeat center center`,
+  backgroundSize: 'cover'
+}))
+</script>
+
 <template>
   <div>
     <!-- Hero -->
-    <section class="about-hero">
-      <h1 class="about-title">Gedoong: CRM Properti untuk Agen Independen Indonesia</h1>
+    <section class="about-hero" :style="heroStyle">
+      <h1 class="about-title">{{ appName }}: {{ appDescription }}</h1>
       <p class="about-sub">
         Platform all-in-one yang membantu agen properti independen mengelola listing, pipeline, klien, dan komisi — dalam satu tempat.
       </p>
@@ -15,7 +31,7 @@
           <div class="mission-icon">🎯</div>
           <h3>Untuk Agen Independen</h3>
           <p>
-            Gedoong dirancang khusus untuk agen properti mandiri yang ingin profesional tanpa ribet. Tidak perlu tim IT, tidak perlu biaya mahal.
+            {{ appName }} dirancang khusus untuk agen properti mandiri yang ingin profesional tanpa ribet. Tidak perlu tim IT, tidak perlu biaya mahal.
           </p>
         </div>
         <div class="mission-card">
@@ -58,7 +74,7 @@
     <!-- CTA -->
     <section class="about-cta">
       <h2>Siap Kelola Properti Lebih Profesional?</h2>
-      <p>Gabung dengan 2000+ agen yang sudah menggunakan Gedoong</p>
+      <p>Gabung dengan 2000+ agen yang sudah menggunakan {{ appName }}</p>
       <div class="cta-buttons">
         <button class="btn-primary-lg">Mulai Gratis Sekarang</button>
         <button class="btn-outline-lg">Hubungi Kami</button>
@@ -72,10 +88,6 @@
 .about-hero {
   text-align: center;
   padding: 100px 24px 80px;
-  background: 
-    linear-gradient(135deg, rgba(11, 28, 48, 0.9) 0%, rgba(0, 82, 204, 0.85) 50%, rgba(11, 28, 48, 0.95) 100%),
-    url('/01_BANNER.png') no-repeat center center;
-  background-size: cover;
   color: #fff;
   clip-path: polygon(0 0, 100% 0, 100% 90%, 0 97%);
 }

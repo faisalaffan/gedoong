@@ -1,4 +1,8 @@
 <script setup lang="ts">
+useHead({
+  title: 'Portal Properti'
+})
+
 const dbListings = ref<any[]>([]);
 const isLoading = ref(true);
 

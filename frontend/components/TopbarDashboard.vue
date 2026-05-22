@@ -1,7 +1,13 @@
+<script setup lang="ts">
+const config = useRuntimeConfig()
+const appName = config.public.appName
+const appLogo = config.public.appLogo
+</script>
+
 <template>
   <header class="topbar">
     <div class="topbar-left">
-      <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="topbar-logo-img" />
+      <img :src="appLogo" :alt="appName + ' Logo'" class="topbar-logo-img" />
       <span class="topbar-tag">CRM Agent</span>
     </div>
     <div class="topbar-right">

@@ -4,13 +4,17 @@ const links = [
   { label: "Beranda", to: "/" },
   { label: "Tentang", to: "/tentang" },
 ];
+
+const config = useRuntimeConfig();
+const appName = config.public.appName;
+const appLogo = config.public.appLogo;
 </script>
 
 <template>
   <header class="navbar glass-panel">
     <div class="navbar-inner">
       <NuxtLink to="/" class="logo">
-        <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="logo-img" />
+        <img :src="appLogo" :alt="appName + ' Logo'" class="logo-img" />
       </NuxtLink>
 
       <nav class="nav-links" :class="{ open: isOpen }">

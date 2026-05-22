@@ -12,12 +12,16 @@ const menu = [
 function isActive(to: string) {
   return route.path === to
 }
+
+const config = useRuntimeConfig()
+const appName = config.public.appName
+const appLogo = config.public.appLogo
 </script>
 
 <template>
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="brand-logo-img" />
+      <img :src="appLogo" :alt="appName + ' Logo'" class="brand-logo-img" />
       <div class="brand-sub">CRM Agent Dashboard</div>
     </div>
 

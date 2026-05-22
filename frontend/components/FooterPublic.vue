@@ -1,17 +1,24 @@
+<script setup lang="ts">
+const config = useRuntimeConfig();
+const appName = config.public.appName;
+const appDescription = config.public.appDescription;
+const appLogoTransparent = config.public.appLogoTransparent;
+const copyrightText = config.public.copyrightText;
+</script>
+
 <template>
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="footer-logo">
           <img
-            src="/02_LOGO_TRANSPARENT.png"
-            alt="Gedoong Logo"
+            :src="appLogoTransparent"
+            :alt="appName + ' Logo'"
             class="footer-logo-img"
           />
         </div>
         <p class="footer-desc">
-          Platform properti terpercaya yang menghubungkan pencari properti
-          dengan agen-agen independen di seluruh Indonesia.
+          {{ appDescription }}
         </p>
       </div>
       <div class="footer-links">
@@ -41,8 +48,7 @@
     </div>
     <div class="footer-bottom">
       <p>
-        &copy; {{ new Date().getFullYear() }} Gedoong. Seluruh hak cipta
-        dilindungi.
+        &copy; {{ new Date().getFullYear() }} {{ copyrightText }}
       </p>
     </div>
   </footer>
