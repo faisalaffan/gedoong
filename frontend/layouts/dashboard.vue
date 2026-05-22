@@ -13,7 +13,7 @@
 <style scoped>
 .layout-dashboard {
   min-height: 100vh;
-  background: #f5f5f7;
+  background: transparent;
   display: flex;
   flex-direction: column;
 }

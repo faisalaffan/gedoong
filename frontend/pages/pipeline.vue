@@ -1,29 +1,47 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import draggable from 'vuedraggable'
+import { db, seedDb, type Deal } from '~/utils/db'
+
 definePageMeta({ layout: 'dashboard' })
 
-interface Deal {
-  name: string
-  properti: string
-  harga: string
+const stageConfigs = [
+  { label: 'Prospek', color: '#0052CC' },
+  { label: 'Follow-up', color: '#e07b00' },
+  { label: 'Nego', color: '#9333ea' },
+  { label: 'Closing', color: '#dc2626' },
+  { label: 'Deal', color: '#16a34a' },
+]
+
+const stages = ref(stageConfigs.map(c => ({ ...c, deals: [] as Deal[] })))
+
+onMounted(async () => {
+  await seedDb()
+  await loadDeals()
+})
+
+async function loadDeals() {
+  const allDeals = await db.deals.toArray()
+  allDeals.sort((a, b) => (a.order || 0) - (b.order || 0))
+  
+  stages.value.forEach(stage => {
+    stage.deals = allDeals.filter(d => d.stage === stage.label)
+  })
 }
 
-const stages = [
-  { label: 'Prospek', count: 5, color: '#0052CC', deals: [
-    { name: 'John', properti: 'Rumah Jaksel', harga: 'Rp 850jt' },
-    { name: 'Sarah', properti: 'Apt Greenlake', harga: 'Rp 450jt' },
-    { name: 'Rina', properti: 'Ruko BSD', harga: 'Rp 1.2M' },
-  ]},
-  { label: 'Follow-up', count: 3, color: '#e07b00', deals: [
-    { name: 'Andi', properti: 'Ruko Mangga Dua', harga: 'Rp 1.2M' },
-  ]},
-  { label: 'Nego', count: 2, color: '#9333ea', deals: [
-    { name: 'Budi', properti: 'Villa Puncak', harga: 'Rp 2.5M' },
-  ]},
-  { label: 'Closing', count: 1, color: '#dc2626', deals: [
-    { name: 'Dewi', properti: 'Kost Depok', harga: 'Rp 2jt/bln' },
-  ]},
-  { label: 'Deal', count: 8, color: '#16a34a', deals: [] },
-]
+async function onChange(event: any, stageLabel: string) {
+  const stage = stages.value.find(s => s.label === stageLabel)
+  if (stage) {
+    await db.transaction('rw', db.deals, async () => {
+      for (let i = 0; i < stage.deals.length; i++) {
+        const deal = stage.deals[i]
+        if (deal.id) {
+          await db.deals.update(deal.id, { stage: stageLabel, order: i })
+        }
+      }
+    })
+  }
+}
 </script>
 
 <template>
@@ -38,23 +56,35 @@ const stages = [
       >
         <div class="column-header">
           <span class="column-title">{{ stage.label }}</span>
-          <span class="column-count">{{ stage.count }}</span>
+          <span class="column-count">{{ stage.deals.length }}</span>
         </div>
-        <div class="column-body">
-          <div
-            v-for="(deal, i) in stage.deals"
-            :key="i"
-            class="deal-card"
-            :style="{ borderLeftColor: stage.color }"
-          >
-            <div class="deal-name">{{ deal.name }}</div>
-            <div class="deal-properti">{{ deal.properti }}</div>
-            <div class="deal-harga">{{ deal.harga }}</div>
-          </div>
-          <div v-if="stage.deals.length === 0" class="column-empty">
-            Belum ada deal
-          </div>
-        </div>
+        
+        <draggable
+          v-model="stage.deals"
+          group="kanban-deals"
+          item-key="id"
+          class="column-body"
+          ghost-class="ghost-card"
+          animation="200"
+          @change="onChange($event, stage.label)"
+        >
+          <template #item="{ element }">
+            <div
+              class="deal-card"
+              :style="{ borderLeftColor: stage.color }"
+            >
+              <div class="deal-name">{{ element.name }}</div>
+              <div class="deal-properti">{{ element.properti }}</div>
+              <div class="deal-harga">{{ element.harga }}</div>
+            </div>
+          </template>
+          
+          <template #footer v-if="stage.deals.length === 0">
+            <div class="column-empty">
+              Belum ada deal
+            </div>
+          </template>
+        </draggable>
       </div>
     </div>
   </div>
@@ -162,5 +192,18 @@ const stages = [
   .kanban-board {
     grid-template-columns: 1fr;
   }
+}
+
+.ghost-card {
+  opacity: 0.5;
+  background: #e8ecf1;
+}
+
+.deal-card {
+  cursor: grab;
+}
+
+.deal-card:active {
+  cursor: grabbing;
 }
 </style>

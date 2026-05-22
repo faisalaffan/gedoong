@@ -42,59 +42,84 @@ function loadMore() {
 .listings-section {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 24px 64px;
+  padding: 64px 24px 80px;
 }
 
 .listings-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 36px;
+  border-bottom: 2px solid var(--border-light);
+  padding-bottom: 16px;
 }
 
 .listings-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #041b3c;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark);
+  position: relative;
+}
+
+.listings-title::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
 }
 
 .listings-count {
+  font-family: var(--font-body);
   font-size: 14px;
-  color: #737685;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .listings-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 30px;
 }
 
 .load-more {
   text-align: center;
-  margin-top: 48px;
+  margin-top: 64px;
 }
 
 .btn-load {
-  padding: 12px 36px;
-  border: 2px solid #0052CC;
-  border-radius: 10px;
+  padding: 14px 40px;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-md);
   background: transparent;
-  color: #0052CC;
+  color: var(--primary);
+  font-family: var(--font-display);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-load:hover {
-  background: #0052CC;
+  background: var(--primary);
   color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 82, 204, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-load:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 1024px) {
   .listings-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
   }
 }
 
@@ -104,9 +129,21 @@ function loadMore() {
   }
 
   .listings-section {
-    padding: 28px 16px 48px;
+    padding: 40px 16px 60px;
   }
 
-  .listings-title { font-size: 18px; }
+  .listings-title { 
+    font-size: 22px; 
+  }
+  
+  .listings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .listings-title::after {
+    bottom: -14px;
+  }
 }
 </style>

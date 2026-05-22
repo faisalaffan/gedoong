@@ -1,25 +1,44 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'dashboard' })
+import { ref, computed, onMounted } from "vue";
+import { db, type Komisi } from "~/utils/db";
 
-interface KomisiItem {
-  properti: string
-  komisi: string
-  tanggal: string
-  status: string
-}
+definePageMeta({ layout: "dashboard" });
 
-const komisiList: KomisiItem[] = [
-  { properti: 'Rumah Minimalis Jaksel', komisi: 'Rp 17jt', tanggal: '4 Mei 2026', status: 'Diproses' },
-  { properti: 'Apartemen Greenlake', komisi: 'Rp 8jt', tanggal: '28 Apr 2026', status: 'Dibayar' },
-  { properti: 'Ruko Mangga Dua', komisi: 'Rp 24jt', tanggal: '15 Apr 2026', status: 'Dibayar' },
-  { properti: 'Villa Puncak', komisi: 'Rp 50jt', tanggal: '2 Apr 2026', status: 'Pending' },
-]
+const komisiList = ref<Komisi[]>([]);
+
+onMounted(async () => {
+  komisiList.value = await db.komisi.toArray();
+});
+
+const parseKomisi = (str: string) => {
+  // 'Rp 17jt' -> 17
+  return parseInt(str.replace(/\D/g, "")) || 0;
+};
+
+const totalKomisi = computed(() => {
+  return komisiList.value.reduce(
+    (acc, curr) => acc + parseKomisi(curr.komisi),
+    0,
+  );
+});
+
+const totalPending = computed(() => {
+  return komisiList.value
+    .filter((k) => k.status === "Pending")
+    .reduce((acc, curr) => acc + parseKomisi(curr.komisi), 0);
+});
+
+const totalDibayar = computed(() => {
+  return komisiList.value
+    .filter((k) => k.status === "Dibayar")
+    .reduce((acc, curr) => acc + parseKomisi(curr.komisi), 0);
+});
 
 function statusClass(status: string) {
-  if (status === 'Dibayar') return 'status-dibayar'
-  if (status === 'Diproses') return 'status-diproses'
-  if (status === 'Pending') return 'status-pending'
-  return ''
+  if (status === "Dibayar") return "status-dibayar";
+  if (status === "Diproses") return "status-diproses";
+  if (status === "Pending") return "status-pending";
+  return "";
 }
 </script>
 
@@ -30,15 +49,15 @@ function statusClass(status: string) {
     <div class="stats-grid">
       <div class="stat-card stat-total">
         <div class="stat-label">Total Komisi</div>
-        <div class="stat-value">Rp 245jt</div>
+        <div class="stat-value">Rp {{ totalKomisi }}jt</div>
       </div>
       <div class="stat-card stat-pending">
         <div class="stat-label">Pending</div>
-        <div class="stat-value">Rp 50jt</div>
+        <div class="stat-value">Rp {{ totalPending }}jt</div>
       </div>
       <div class="stat-card stat-dibayar">
         <div class="stat-label">Sudah Dibayar</div>
-        <div class="stat-value">Rp 195jt</div>
+        <div class="stat-value">Rp {{ totalDibayar }}jt</div>
       </div>
     </div>
 
@@ -57,7 +76,11 @@ function statusClass(status: string) {
             <td class="cell-properti">{{ k.properti }}</td>
             <td class="cell-komisi">{{ k.komisi }}</td>
             <td>{{ k.tanggal }}</td>
-            <td><span class="status-badge" :class="statusClass(k.status)">{{ k.status }}</span></td>
+            <td>
+              <span class="status-badge" :class="statusClass(k.status)">{{
+                k.status
+              }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -103,9 +126,15 @@ function statusClass(status: string) {
   font-weight: 700;
 }
 
-.stat-total .stat-value { color: #0052CC; }
-.stat-pending .stat-value { color: #e07b00; }
-.stat-dibayar .stat-value { color: #16a34a; }
+.stat-total .stat-value {
+  color: #0052cc;
+}
+.stat-pending .stat-value {
+  color: #e07b00;
+}
+.stat-dibayar .stat-value {
+  color: #16a34a;
+}
 
 .table-card {
   background: #fff;
@@ -166,7 +195,7 @@ function statusClass(status: string) {
 
 .status-diproses {
   background: #e8f0fe;
-  color: #0052CC;
+  color: #0052cc;
 }
 
 .status-pending {

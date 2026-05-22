@@ -50,23 +50,36 @@ const priceRange = ref('')
 <style scoped>
 .hero {
   position: relative;
-  padding: 80px 24px 64px;
+  padding: 120px 24px 100px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
 }
 
 .hero-bg {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(135deg, #0052CC 0%, #003d9b 40%, #041b3c 100%);
-  clip-path: polygon(0 0, 100% 0, 100% 72%, 0 92%);
+  background: 
+    linear-gradient(135deg, rgba(11, 28, 48, 0.75) 0%, rgba(0, 82, 204, 0.7) 50%, rgba(11, 28, 48, 0.85) 100%),
+    url('/01_BANNER.png') no-repeat center center;
+  background-size: cover;
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 98%);
   z-index: 0;
+  transform: scale(1.02);
+  transition: transform 10s ease-out;
+}
+
+.hero:hover .hero-bg {
+  transform: scale(1.0);
 }
 
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 800px;
+  max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   text-align: center;
 }
@@ -74,125 +87,182 @@ const priceRange = ref('')
 .trust-badges {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .badge {
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
   color: #fff;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .hero-title {
-  font-size: 44px;
+  font-family: var(--font-display);
+  font-size: 48px;
   font-weight: 800;
   color: #fff;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin-bottom: 16px;
+  text-shadow: 0 4px 12px rgba(11, 28, 48, 0.3);
 }
 
 .hero-sub {
+  font-family: var(--font-body);
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 40px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 44px;
   line-height: 1.6;
+  text-shadow: 0 2px 6px rgba(11, 28, 48, 0.2);
 }
 
 .search-box {
   display: flex;
   align-items: center;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  height: 60px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .search-field {
-  flex: 1;
+  flex: 1.2;
   display: flex;
   align-items: center;
   padding: 0 16px;
-  gap: 10px;
+  gap: 12px;
 }
 
-.search-icon { flex-shrink: 0; }
+.search-icon { 
+  flex-shrink: 0; 
+  stroke: var(--primary);
+}
 
 .search-input {
   border: none;
   outline: none;
   font-size: 15px;
-  color: #041b3c;
+  color: var(--text-dark);
   width: 100%;
-  font-family: inherit;
+  font-family: var(--font-body);
+  background: transparent;
 }
 
-.search-input::placeholder { color: #a1a5b0; }
+.search-input::placeholder { 
+  color: var(--text-muted); 
+}
 
 .search-divider {
   width: 1px;
-  height: 28px;
-  background: #e8ecf1;
+  height: 32px;
+  background: var(--border-light);
   flex-shrink: 0;
 }
 
 .search-select {
+  flex: 0.8;
   border: none;
   outline: none;
   font-size: 14px;
-  color: #041b3c;
+  color: var(--text-dark);
   background: transparent;
   padding: 0 16px;
-  font-family: inherit;
+  font-family: var(--font-display);
+  font-weight: 500;
   cursor: pointer;
-  appearance: auto;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23737685' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
 }
 
 .search-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 0 28px;
   height: 48px;
   border: none;
-  border-radius: 12px;
-  background: #0052CC;
+  border-radius: var(--radius-md);
+  background: var(--primary);
   color: #fff;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  margin-right: 6px;
-  transition: background 0.15s;
-  font-family: inherit;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);
 }
 
-.search-btn:hover { background: #003d9b; }
+.search-btn:hover { 
+  background: var(--primary-hover); 
+  box-shadow: 0 6px 18px rgba(0, 82, 204, 0.3);
+  transform: translateY(-1px);
+}
+
+.search-btn:active {
+  transform: translateY(0);
+}
 
 @media (max-width: 768px) {
-  .hero { padding: 48px 16px 40px; }
-  .hero-title { font-size: 30px; }
-  .hero-sub { font-size: 15px; }
+  .hero { 
+    padding: 80px 16px 60px; 
+    min-height: auto;
+  }
+  .hero-bg {
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 0 98%);
+  }
+  .hero-title { font-size: 32px; }
+  .hero-sub { font-size: 15px; margin-bottom: 32px; }
 
   .search-box {
     flex-direction: column;
     height: auto;
     padding: 12px;
+    gap: 12px;
+    border-radius: var(--radius-md);
   }
 
-  .search-field { width: 100%; padding: 10px 12px; }
-  .search-divider { display: none; }
-  .search-select { width: 100%; padding: 10px 12px; border-top: 1px solid #e8ecf1; }
-  .search-btn { width: calc(100% - 12px); margin: 8px 6px 6px; justify-content: center; }
+  .search-field { 
+    width: 100%; 
+    padding: 10px 8px; 
+  }
+  
+  .search-divider { 
+    display: none; 
+  }
+  
+  .search-select { 
+    width: 100%; 
+    padding: 12px 8px; 
+    border-top: 1px solid var(--border-light);
+    background-position: right 8px center;
+  }
+  
+  .search-btn { 
+    width: 100%; 
+    margin: 4px 0 0 0; 
+  }
 
   .trust-badges { gap: 8px; }
-  .badge { font-size: 12px; padding: 4px 12px; }
+  .badge { font-size: 12px; padding: 6px 14px; }
 }
 </style>

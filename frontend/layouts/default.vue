@@ -9,6 +9,6 @@
 <style scoped>
 .layout-default {
   min-height: 100vh;
-  background: #fafaf8;
+  background: transparent;
 }
 </style>

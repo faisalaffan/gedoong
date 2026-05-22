@@ -1,28 +1,22 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'dashboard' })
+import { ref, onMounted } from "vue";
+import { db, type Klien } from "~/utils/db";
 
-interface KlienItem {
-  nama: string
-  kontak: string
-  properti: string
-  pipeline: string
-}
+definePageMeta({ layout: "dashboard" });
 
-const kliens: KlienItem[] = [
-  { nama: 'John Doe', kontak: '0812-3456-7890', properti: 'Rumah Minimalis Jaksel', pipeline: 'Prospek' },
-  { nama: 'Sarah Lee', kontak: '0856-7890-1234', properti: 'Apartemen Greenlake', pipeline: 'Nego' },
-  { nama: 'Andi Prasetyo', kontak: '0878-1234-5678', properti: 'Ruko Mangga Dua', pipeline: 'Follow-up' },
-  { nama: 'Rina Wijaya', kontak: '0813-9876-5432', properti: 'Ruko BSD', pipeline: 'Prospek' },
-]
+const kliens = ref<Klien[]>([]);
+const search = ref("");
 
-const search = ref('')
+onMounted(async () => {
+  kliens.value = await db.kliens.toArray();
+});
 
 function pipelineClass(stage: string) {
-  if (stage === 'Prospek') return 'pipe-prospek'
-  if (stage === 'Follow-up') return 'pipe-followup'
-  if (stage === 'Nego') return 'pipe-nego'
-  if (stage === 'Closing') return 'pipe-closing'
-  return ''
+  if (stage === "Prospek") return "pipe-prospek";
+  if (stage === "Follow-up") return "pipe-followup";
+  if (stage === "Nego") return "pipe-nego";
+  if (stage === "Closing") return "pipe-closing";
+  return "";
 }
 </script>
 
@@ -55,7 +49,11 @@ function pipelineClass(stage: string) {
             <td class="cell-nama">{{ k.nama }}</td>
             <td>{{ k.kontak }}</td>
             <td>{{ k.properti }}</td>
-            <td><span class="pipe-badge" :class="pipelineClass(k.pipeline)">{{ k.pipeline }}</span></td>
+            <td>
+              <span class="pipe-badge" :class="pipelineClass(k.pipeline)">{{
+                k.pipeline
+              }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -86,7 +84,7 @@ function pipelineClass(stage: string) {
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  background: #0052CC;
+  background: #0052cc;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -113,7 +111,7 @@ function pipelineClass(stage: string) {
 }
 
 .search-input:focus {
-  border-color: #0052CC;
+  border-color: #0052cc;
 }
 
 .table-card {
@@ -166,7 +164,7 @@ function pipelineClass(stage: string) {
 
 .pipe-prospek {
   background: #e8f0fe;
-  color: #0052CC;
+  color: #0052cc;
 }
 
 .pipe-followup {

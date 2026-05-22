@@ -2,7 +2,9 @@
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <span class="footer-logo">🏠 Gedoong</span>
+        <div class="footer-logo">
+          <img src="/02_LOGO_TRANSPARENT.png" alt="Gedoong Logo" class="footer-logo-img" />
+        </div>
         <p class="footer-desc">
           Platform properti terpercaya yang menghubungkan pencari properti dengan agen-agen independen di seluruh Indonesia.
         </p>
@@ -40,9 +42,11 @@
 
 <style scoped>
 .footer {
-  background: #041b3c;
-  color: #c3c6d6;
+  background: #061120;
+  color: var(--text-muted);
   margin-top: 80px;
+  border-top: 1px solid var(--border-light);
+  font-family: var(--font-body);
 }
 
 .footer-inner {
@@ -50,16 +54,31 @@
   margin: 0 auto;
   padding: 64px 24px 48px;
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1.2fr 2fr;
   gap: 48px;
 }
 
-.footer-logo { font-size: 22px; font-weight: 700; color: #fff; }
+.footer-logo {
+  margin-bottom: 16px;
+}
+
+.footer-logo-img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* Ensure perfect high-contrast white on dark theme */
+  opacity: 0.95;
+  transition: transform var(--transition-fast);
+}
+
+.footer-logo-img:hover {
+  transform: scale(1.02);
+}
 
 .footer-desc {
   font-size: 14px;
   line-height: 1.7;
-  margin-top: 12px;
+  color: #8c93a6;
   max-width: 320px;
 }
 
@@ -70,38 +89,47 @@
 }
 
 .footer-col h4 {
+  font-family: var(--font-display);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .footer-col a {
   display: block;
-  font-size: 13px;
-  color: #c3c6d6;
+  font-size: 14px;
+  color: #8c93a6;
   text-decoration: none;
-  margin-bottom: 10px;
-  transition: color 0.15s;
+  margin-bottom: 12px;
+  transition: all var(--transition-fast);
 }
 
-.footer-col a:hover { color: #fff; }
+.footer-col a:hover {
+  color: var(--secondary);
+  transform: translateX(2px);
+}
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 24px 24px;
   text-align: center;
   font-size: 13px;
+  color: #5d6475;
 }
 
 @media (max-width: 768px) {
   .footer-inner {
     grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 40px;
+    padding: 48px 20px 32px;
   }
 
   .footer-links {
     grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
   }
 }
 </style>

@@ -54,11 +54,15 @@ function onSortChange(e: Event) {
 
 <style scoped>
 .filter-bar {
-  background: #fff;
-  border-bottom: 1px solid #e8ecf1;
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
-  top: 64px;
+  top: 68px;
   z-index: 50;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
 }
 
 .filter-inner {
@@ -77,24 +81,29 @@ function onSortChange(e: Event) {
 }
 
 .chip {
-  padding: 8px 18px;
-  border: 1px solid #d7e2ff;
-  border-radius: 20px;
-  background: #fff;
-  color: #434654;
+  padding: 8px 20px;
+  border: 1px solid var(--border-slate);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-medium);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
+  transition: all var(--transition-fast);
+  font-family: var(--font-display);
 }
 
-.chip:hover { border-color: #0052CC; color: #0052CC; }
+.chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
 
 .chip.active {
-  background: #0052CC;
-  border-color: #0052CC;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #fff;
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .sort-group {
@@ -105,23 +114,48 @@ function onSortChange(e: Event) {
 
 .sort-label {
   font-size: 13px;
-  color: #737685;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .sort-select {
-  padding: 8px 12px;
-  border: 1px solid #d7e2ff;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-slate);
+  border-radius: var(--radius-md);
   font-size: 13px;
-  color: #041b3c;
-  background: #fff;
-  font-family: inherit;
+  color: var(--text-dark);
+  background: var(--bg-card);
+  font-family: var(--font-display);
+  font-weight: 600;
   cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.sort-select:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.sort-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 @media (max-width: 768px) {
-  .filter-inner { flex-direction: column; gap: 10px; align-items: stretch; }
-  .sort-group { justify-content: flex-end; }
+  .filter-bar {
+    top: 68px;
+  }
+  .filter-inner {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .sort-group {
+    justify-content: space-between;
+  }
 }
 </style>

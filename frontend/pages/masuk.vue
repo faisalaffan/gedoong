@@ -1,10 +1,12 @@
 <template>
   <div class="auth-page">
-    <div class="auth-card">
+    <div class="auth-card glass-panel">
       <div class="auth-header">
-        <div class="auth-icon">🏠</div>
-        <h1>Masuk ke Gedoong</h1>
-        <p>Lanjutkan mengelola properti Anda</p>
+        <NuxtLink to="/" class="auth-logo">
+          <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="auth-logo-img" />
+        </NuxtLink>
+        <h1>Selamat Datang Kembali</h1>
+        <p>Lanjutkan mengelola portal properti Anda</p>
       </div>
 
       <form class="auth-form" @submit.prevent>
@@ -21,7 +23,7 @@
         <div class="field">
           <div class="field-header">
             <label class="field-label">Password</label>
-            <a href="#" class="field-link">Lupa password?</a>
+            <a href="#" class="field-link">Lupa Password?</a>
           </div>
           <input
             v-model="password"
@@ -31,7 +33,7 @@
           />
         </div>
 
-        <button class="btn-submit" type="submit">Masuk</button>
+        <button class="btn-submit" type="submit">Masuk ke Dashboard</button>
       </form>
 
       <p class="auth-footer">
@@ -52,41 +54,64 @@ const password = ref('')
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 64px);
-  padding: 48px 24px;
+  min-height: calc(100vh - 68px);
+  padding: 60px 24px;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.auth-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
 }
 
 .auth-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
-.auth-icon {
-  font-size: 28px;
-  margin-bottom: 12px;
+.auth-logo {
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.auth-logo-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  transition: transform var(--transition-fast);
+}
+
+.auth-logo-img:hover {
+  transform: scale(1.03);
 }
 
 .auth-header h1 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #041b3c;
-  margin-bottom: 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 8px;
 }
 
 .auth-header p {
+  font-family: var(--font-body);
   font-size: 14px;
-  color: #737685;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .field {
@@ -98,79 +123,98 @@ const password = ref('')
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .field-label {
+  font-family: var(--font-display);
   font-size: 13px;
-  font-weight: 600;
-  color: #041b3c;
+  font-weight: 700;
+  color: var(--text-dark);
 }
 
 .field-link {
+  font-family: var(--font-body);
   font-size: 12px;
-  color: #0052CC;
+  color: var(--primary);
   text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-fast);
 }
 
 .field-link:hover {
-  text-decoration: underline;
+  color: var(--primary-hover);
 }
 
 .field-input {
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid #d7e2ff;
-  border-radius: 8px;
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--border-slate);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  font-family: inherit;
-  color: #041b3c;
-  background: #fff;
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  background: var(--bg-card);
   outline: none;
-  transition: border-color 0.15s;
+  transition: all var(--transition-fast);
+}
+
+.field-input:hover {
+  border-color: var(--primary);
 }
 
 .field-input:focus {
-  border-color: #0052CC;
-  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .field-input::placeholder {
-  color: #a1a5b0;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .btn-submit {
-  height: 44px;
+  height: 48px;
   border: none;
-  border-radius: 8px;
-  background: #0052CC;
+  border-radius: var(--radius-md);
+  background: var(--primary);
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
-  font-family: inherit;
+  font-weight: 700;
+  font-family: var(--font-display);
   cursor: pointer;
-  transition: background 0.15s;
-  margin-top: 4px;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transition: all var(--transition-fast);
+  margin-top: 8px;
 }
 
 .btn-submit:hover {
-  background: #003d9b;
+  background: var(--primary-hover);
+  box-shadow: 0 6px 20px rgba(0, 82, 204, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
 }
 
 .auth-footer {
   text-align: center;
-  font-size: 13px;
-  color: #737685;
-  margin-top: 24px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 32px;
 }
 
 .auth-link {
-  color: #0052CC;
-  font-weight: 600;
+  color: var(--primary);
+  font-weight: 700;
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 .auth-link:hover {
-  text-decoration: underline;
+  color: var(--primary-hover);
 }
 </style>

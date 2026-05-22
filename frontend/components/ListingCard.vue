@@ -48,23 +48,28 @@ defineProps<{
 
 <style scoped>
 .card {
-  background: #fff;
-  border-radius: 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: rgba(0, 82, 204, 0.2);
+  transform: translateY(-4px);
 }
 
 .card-image {
   position: relative;
-  aspect-ratio: 16 / 9;
-  background: #f1f3ff;
+  aspect-ratio: 16 / 10;
+  background: var(--primary-light);
   overflow: hidden;
 }
 
@@ -72,78 +77,111 @@ defineProps<{
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  transition: transform var(--transition-normal);
 }
 
-.card:hover .card-image img { transform: scale(1.04); }
+.card:hover .card-image img {
+  transform: scale(1.05);
+}
 
 .badge-new {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 4px 10px;
-  background: #FF6B35;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  background: var(--accent);
   color: #fff;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .badge-type {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
   font-size: 11px;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
+  font-weight: 700;
   color: #fff;
+  box-shadow: var(--shadow-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .badge-type.jual { background: rgba(0, 82, 204, 0.85); }
-.badge-type.sewa { background: rgba(40, 90, 185, 0.85); }
+.badge-type.sewa { background: rgba(20, 184, 166, 0.85); }
 
 .card-body {
-  padding: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .card-price {
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 20px;
   font-weight: 700;
-  color: #003d9b;
-  margin-bottom: 4px;
+  color: var(--primary);
+  margin-bottom: 6px;
 }
 
 .card-title {
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 600;
-  color: #041b3c;
-  margin-bottom: 6px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
   line-height: 1.4;
+  transition: color var(--transition-fast);
+}
+
+.card:hover .card-title {
+  color: var(--primary);
 }
 
 .card-location {
+  font-family: var(--font-body);
   font-size: 13px;
-  color: #737685;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 16px;
+  margin-top: auto;
+}
+
+.card-location svg {
+  stroke: var(--primary);
 }
 
 .card-features {
   display: flex;
-  gap: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f3ff;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
 }
 
 .feature {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  font-family: var(--font-body);
   font-size: 12px;
-  color: #737685;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+.feature svg {
+  stroke: var(--primary);
+  opacity: 0.8;
 }
 </style>

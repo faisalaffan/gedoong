@@ -17,8 +17,8 @@ function isActive(to: string) {
 <template>
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-name">Gedoong</div>
-      <div class="brand-sub">CRM Agent</div>
+      <img src="/03_LOGO_MAIN.png" alt="Gedoong Logo" class="brand-logo-img" />
+      <div class="brand-sub">CRM Agent Dashboard</div>
     </div>
 
     <nav class="sidebar-nav">
@@ -45,67 +45,105 @@ function isActive(to: string) {
 
 <style scoped>
 .sidebar {
-  width: 220px;
-  background: #fff;
-  border-right: 1px solid #e8ecf1;
+  width: 240px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-brand {
-  padding: 20px 16px;
-  border-bottom: 1px solid #e8ecf1;
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.brand-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0052CC;
+.brand-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  align-self: flex-start;
 }
 
 .brand-sub {
+  font-family: var(--font-display);
   font-size: 11px;
-  color: #737685;
-  margin-top: 2px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 8px;
+  gap: 4px;
+  padding: 20px 12px;
   flex: 1;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
   text-decoration: none;
-  color: #434654;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s;
+  color: var(--text-medium);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0.4);
+  width: 4px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  transition: all var(--transition-fast);
 }
 
 .sidebar-link:hover {
-  background: #f0f4ff;
-  color: #0052CC;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.sidebar-link:hover::before {
+  opacity: 0.5;
+  transform: translateY(-50%) scaleY(0.8);
 }
 
 .sidebar-link.active {
-  background: #e8f0fe;
-  color: #0052CC;
-  font-weight: 600;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.sidebar-link.active::before {
+  opacity: 1;
+  transform: translateY(-50%) scaleY(1);
 }
 
 .sidebar-icon {
   font-size: 16px;
   width: 24px;
   text-align: center;
+  transition: transform var(--transition-fast);
+}
+
+.sidebar-link:hover .sidebar-icon {
+  transform: scale(1.15);
 }
 
 .sidebar-label {
@@ -113,16 +151,21 @@ function isActive(to: string) {
 }
 
 .sidebar-footer {
-  padding: 12px 8px;
-  border-top: 1px solid #e8ecf1;
+  padding: 16px 12px;
+  border-top: 1px solid var(--border-light);
 }
 
 .back-link {
-  color: #737685;
-  font-size: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.back-link::before {
+  display: none !important;
 }
 
 .back-link:hover {
-  color: #0052CC;
+  color: var(--primary);
+  background: var(--primary-light);
 }
 </style>
