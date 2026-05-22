@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { db } from '~/utils/db'
-import { listings } from '~/data/listings'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -21,8 +20,8 @@ const pipelineStages = ref([
 const activities = ref<string[]>([])
 
 onMounted(async () => {
-  // 1. Total listings count from static listings
-  totalListings.value = listings.length
+  // 1. Total listings count from IndexedDB listings
+  totalListings.value = await db.listings.count()
 
   // 2. Fetch all deals from IndexedDB
   const allDeals = await db.deals.toArray()

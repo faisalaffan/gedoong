@@ -27,18 +27,33 @@ export interface Komisi {
   status: string
 }
 
+export interface Listing {
+  id?: number
+  properti: string
+  tipe: 'Jual' | 'Sewa'
+  harga: string
+  status: 'Aktif' | 'Terjual' | 'Draft'
+  lokasi?: string
+  kamarTidur?: number
+  kamarMandi?: number
+  luas?: number
+  imageUrl?: string
+}
+
 // Create DB
 export const db = new Dexie('GedoongDB') as Dexie & {
   deals: EntityTable<Deal, 'id'>
   kliens: EntityTable<Klien, 'id'>
   komisi: EntityTable<Komisi, 'id'>
+  listings: EntityTable<Listing, 'id'>
 }
 
 // Define Schema
-db.version(2).stores({
+db.version(3).stores({
   deals: '++id, stage, order', 
   kliens: '++id, pipeline',
-  komisi: '++id, status'
+  komisi: '++id, status',
+  listings: '++id, tipe, status'
 })
 
 // Seed Initial Data
@@ -72,6 +87,17 @@ export async function seedDb() {
       { properti: 'Apartemen Greenlake', komisi: 'Rp 8jt', tanggal: '28 Apr 2026', status: 'Dibayar' },
       { properti: 'Ruko Mangga Dua', komisi: 'Rp 24jt', tanggal: '15 Apr 2026', status: 'Dibayar' },
       { properti: 'Villa Puncak', komisi: 'Rp 50jt', tanggal: '2 Apr 2026', status: 'Pending' },
+    ])
+  }
+
+  const listingsCount = await db.listings.count()
+  if (listingsCount === 0) {
+    await db.listings.bulkAdd([
+      { properti: 'Rumah Minimalis Jaksel', tipe: 'Jual', harga: 'Rp 850jt', status: 'Aktif', lokasi: 'Jakarta Selatan', kamarTidur: 3, kamarMandi: 2, luas: 120, imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=340&fit=crop' },
+      { properti: 'Apartemen Greenlake', tipe: 'Sewa', harga: 'Rp 4.5jt/bln', status: 'Terjual', lokasi: 'Jakarta Utara', kamarTidur: 2, kamarMandi: 1, luas: 60, imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=340&fit=crop' },
+      { properti: 'Ruko Mangga Dua', tipe: 'Jual', harga: 'Rp 1.2M', status: 'Draft', lokasi: 'Jakarta Pusat', kamarTidur: 0, kamarMandi: 2, luas: 150, imageUrl: 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=600&h=340&fit=crop' },
+      { properti: 'Villa Puncak', tipe: 'Jual', harga: 'Rp 2.5M', status: 'Aktif', lokasi: 'Bogor', kamarTidur: 4, kamarMandi: 3, luas: 300, imageUrl: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600&h=340&fit=crop' },
+      { properti: 'Kost Exclusive Depok', tipe: 'Sewa', harga: 'Rp 2jt/bln', status: 'Aktif', lokasi: 'Depok', kamarTidur: 1, kamarMandi: 1, luas: 20, imageUrl: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=340&fit=crop' }
     ])
   }
 }
