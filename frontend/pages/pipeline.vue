@@ -1,119 +1,127 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import draggable from 'vuedraggable'
-import { db, seedDb, type Deal } from '~/utils/db'
+import { ref, onMounted } from "vue";
+import draggable from "vuedraggable";
+import { db, seedDb, type Deal } from "~/utils/db";
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: "dashboard" });
 
 const stageConfigs = [
-  { label: 'Prospek', color: '#0052CC' },
-  { label: 'Follow-up', color: '#e07b00' },
-  { label: 'Nego', color: '#9333ea' },
-  { label: 'Closing', color: '#dc2626' },
-  { label: 'Deal', color: '#16a34a' },
-]
+  { label: "Prospek", color: "#0052CC" },
+  { label: "Follow-up", color: "#e07b00" },
+  { label: "Nego", color: "#9333ea" },
+  { label: "Closing", color: "#dc2626" },
+  { label: "Deal", color: "#16a34a" },
+];
 
-const stages = ref(stageConfigs.map(c => ({ ...c, deals: [] as Deal[] })))
+const stages = ref(stageConfigs.map((c) => ({ ...c, deals: [] as Deal[] })));
 
-const isModalOpen = ref(false)
+const isModalOpen = ref(false);
 const newDeal = ref({
-  name: '',
-  properti: '',
-  harga: '',
-  stage: 'Prospek'
-})
+  name: "",
+  properti: "",
+  harga: "",
+  stage: "Prospek",
+});
 
 onMounted(async () => {
-  await seedDb()
-  await loadDeals()
-})
+  await seedDb();
+  await loadDeals();
+});
 
 async function loadDeals() {
-  const allDeals = await db.deals.toArray()
-  allDeals.sort((a, b) => (a.order || 0) - (b.order || 0))
-  
-  stages.value.forEach(stage => {
-    stage.deals = allDeals.filter(d => d.stage === stage.label)
-  })
+  const allDeals = await db.deals.toArray();
+  allDeals.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  stages.value.forEach((stage) => {
+    stage.deals = allDeals.filter((d) => d.stage === stage.label);
+  });
 }
 
 async function onChange(event: any, stageLabel: string) {
-  const stage = stages.value.find(s => s.label === stageLabel)
+  const stage = stages.value.find((s) => s.label === stageLabel);
   if (stage) {
-    await db.transaction('rw', db.deals, async () => {
+    await db.transaction("rw", db.deals, async () => {
       for (let i = 0; i < stage.deals.length; i++) {
-        const deal = stage.deals[i]
+        const deal = stage.deals[i];
         if (deal.id) {
-          await db.deals.update(deal.id, { stage: stageLabel, order: i })
+          await db.deals.update(deal.id, { stage: stageLabel, order: i });
         }
       }
-    })
+    });
   }
 }
 
 function openModal() {
   newDeal.value = {
-    name: '',
-    properti: '',
-    harga: '',
-    stage: 'Prospek'
-  }
-  isModalOpen.value = true
+    name: "",
+    properti: "",
+    harga: "",
+    stage: "Prospek",
+  };
+  isModalOpen.value = true;
 }
 
 function closeModal() {
-  isModalOpen.value = false
+  isModalOpen.value = false;
 }
 
 async function addNewDeal() {
-  if (!newDeal.value.name.trim() || !newDeal.value.properti.trim() || !newDeal.value.harga.trim()) {
-    return
+  if (
+    !newDeal.value.name.trim() ||
+    !newDeal.value.properti.trim() ||
+    !newDeal.value.harga.trim()
+  ) {
+    return;
   }
 
-  const currentStageCount = stages.value.find(s => s.label === newDeal.value.stage)?.deals.length || 0
+  const currentStageCount =
+    stages.value.find((s) => s.label === newDeal.value.stage)?.deals.length ||
+    0;
 
   await db.deals.add({
     name: newDeal.value.name.trim(),
     properti: newDeal.value.properti.trim(),
     harga: newDeal.value.harga.trim(),
     stage: newDeal.value.stage,
-    order: currentStageCount
-  })
+    order: currentStageCount,
+  });
 
-  await loadDeals()
-  closeModal()
+  await loadDeals();
+  closeModal();
 }
 
-const isDrawerOpen = ref(false)
+const isDrawerOpen = ref(false);
 const selectedDeal = ref<Deal>({
-  name: '',
-  properti: '',
-  harga: '',
-  stage: 'Prospek',
+  name: "",
+  properti: "",
+  harga: "",
+  stage: "Prospek",
   order: 0,
-  deskripsi: ''
-})
-let originalStage = ''
+  deskripsi: "",
+});
+let originalStage = "";
 
 function openDrawer(deal: Deal) {
-  selectedDeal.value = { ...deal, deskripsi: deal.deskripsi || '' }
-  originalStage = deal.stage
-  isDrawerOpen.value = true
+  selectedDeal.value = { ...deal, deskripsi: deal.deskripsi || "" };
+  originalStage = deal.stage;
+  isDrawerOpen.value = true;
 }
 
 function closeDrawer() {
-  isDrawerOpen.value = false
+  isDrawerOpen.value = false;
 }
 
 async function updateDeal() {
-  if (!selectedDeal.value.id) return
+  if (!selectedDeal.value.id) return;
 
-  const dealId = selectedDeal.value.id
-  const hasStageChanged = selectedDeal.value.stage !== originalStage
+  const dealId = selectedDeal.value.id;
+  const hasStageChanged = selectedDeal.value.stage !== originalStage;
 
-  let newOrder = selectedDeal.value.order
+  let newOrder = selectedDeal.value.order;
   if (hasStageChanged) {
-    newOrder = stages.value.find(s => s.label === selectedDeal.value.stage)?.deals.length || 0
+    newOrder =
+      stages.value.find((s) => s.label === selectedDeal.value.stage)?.deals
+        .length || 0;
   }
 
   await db.deals.update(dealId, {
@@ -122,20 +130,24 @@ async function updateDeal() {
     harga: selectedDeal.value.harga.trim(),
     stage: selectedDeal.value.stage,
     order: newOrder,
-    deskripsi: (selectedDeal.value.deskripsi || '').trim()
-  })
+    deskripsi: (selectedDeal.value.deskripsi || "").trim(),
+  });
 
-  await loadDeals()
-  closeDrawer()
+  await loadDeals();
+  closeDrawer();
 }
 
 async function deleteDeal() {
-  if (!selectedDeal.value.id) return
+  if (!selectedDeal.value.id) return;
 
-  if (confirm(`Apakah Anda yakin ingin menghapus deal untuk ${selectedDeal.value.name}?`)) {
-    await db.deals.delete(selectedDeal.value.id)
-    await loadDeals()
-    closeDrawer()
+  if (
+    confirm(
+      `Apakah Anda yakin ingin menghapus deal untuk ${selectedDeal.value.name}?`,
+    )
+  ) {
+    await db.deals.delete(selectedDeal.value.id);
+    await loadDeals();
+    closeDrawer();
   }
 }
 </script>
@@ -145,16 +157,12 @@ async function deleteDeal() {
     <h2 class="page-title">Pipeline Kanban</h2>
 
     <div class="kanban-board">
-      <div
-        v-for="stage in stages"
-        :key="stage.label"
-        class="kanban-column"
-      >
+      <div v-for="stage in stages" :key="stage.label" class="kanban-column">
         <div class="column-header">
           <span class="column-title">{{ stage.label }}</span>
           <span class="column-count">{{ stage.deals.length }}</span>
         </div>
-        
+
         <draggable
           v-model="stage.deals"
           group="kanban-deals"
@@ -175,11 +183,9 @@ async function deleteDeal() {
               <div class="deal-harga">{{ element.harga }}</div>
             </div>
           </template>
-          
+
           <template #footer v-if="stage.deals.length === 0">
-            <div class="column-empty">
-              Belum ada deal
-            </div>
+            <div class="column-empty">Belum ada deal</div>
           </template>
         </draggable>
       </div>
@@ -187,7 +193,17 @@ async function deleteDeal() {
 
     <!-- Floating Action Button (FAB) -->
     <button class="fab-btn" @click="openModal" title="Tambah Pipeline Baru">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
@@ -200,7 +216,17 @@ async function deleteDeal() {
           <div class="modal-header">
             <h3 class="modal-title">Tambah Pipeline Baru</h3>
             <button class="close-btn" @click="closeModal" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -263,7 +289,9 @@ async function deleteDeal() {
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn-cancel" @click="closeModal">Batal</button>
+              <button type="button" class="btn-cancel" @click="closeModal">
+                Batal
+              </button>
               <button type="submit" class="btn-submit">Simpan Deal</button>
             </div>
           </form>
@@ -282,7 +310,17 @@ async function deleteDeal() {
               <span class="item-id">DEAL-#{{ selectedDeal.id }}</span>
             </div>
             <button class="close-btn" @click="closeDrawer" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -305,7 +343,7 @@ async function deleteDeal() {
               <!-- Section: Details -->
               <div class="drawer-section">
                 <h4 class="section-title">Detail</h4>
-                
+
                 <div class="section-grid">
                   <div class="grid-label">Properti</div>
                   <div class="grid-value">
@@ -331,7 +369,15 @@ async function deleteDeal() {
 
                   <div class="grid-label">Stage</div>
                   <div class="grid-value">
-                    <div class="select-badge-wrapper" :style="{ '--badge-color': stageConfigs.find(c => c.label === selectedDeal.stage)?.color || '#0052CC' }">
+                    <div
+                      class="select-badge-wrapper"
+                      :style="{
+                        '--badge-color':
+                          stageConfigs.find(
+                            (c) => c.label === selectedDeal.stage,
+                          )?.color || '#0052CC',
+                      }"
+                    >
                       <select
                         v-model="selectedDeal.stage"
                         class="form-select-inline"
@@ -364,17 +410,34 @@ async function deleteDeal() {
               <!-- Action buttons at bottom -->
               <div class="drawer-actions">
                 <button type="button" class="btn-delete" @click="deleteDeal">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-trash">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon-trash"
+                  >
                     <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    ></path>
                     <line x1="10" y1="11" x2="10" y2="17"></line>
                     <line x1="14" y1="11" x2="14" y2="17"></line>
                   </svg>
                   Hapus Deal
                 </button>
                 <div class="main-actions">
-                  <button type="button" class="btn-cancel" @click="closeDrawer">Batal</button>
-                  <button type="submit" class="btn-submit">Simpan Perubahan</button>
+                  <button type="button" class="btn-cancel" @click="closeDrawer">
+                    Batal
+                  </button>
+                  <button type="submit" class="btn-submit">
+                    Simpan Perubahan
+                  </button>
                 </div>
               </div>
             </form>
@@ -447,10 +510,13 @@ async function deleteDeal() {
   background: #fff;
   border-radius: 8px;
   padding: 12px;
-  border-left: 3px solid #0052CC;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  border-left: 3px solid #0052cc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border var(--transition-fast);
 }
 
 .deal-card:hover {
@@ -518,10 +584,16 @@ async function deleteDeal() {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-hover) 100%
+  );
   color: white;
   border: none;
-  box-shadow: 0 8px 24px rgba(0, 82, 204, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 8px 24px rgba(0, 82, 204, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -532,7 +604,9 @@ async function deleteDeal() {
 
 .fab-btn:hover {
   transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 12px 32px rgba(0, 82, 204, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 12px 32px rgba(0, 82, 204, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab-btn:active {
@@ -565,7 +639,9 @@ async function deleteDeal() {
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-light);
   transform: translateY(0);
-  transition: transform var(--transition-normal), opacity var(--transition-normal);
+  transition:
+    transform var(--transition-normal),
+    opacity var(--transition-normal);
 }
 
 .modal-header {
@@ -619,6 +695,8 @@ async function deleteDeal() {
 
 .form-input,
 .form-select {
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-slate);
@@ -668,7 +746,11 @@ async function deleteDeal() {
   padding: 10px 20px;
   border-radius: var(--radius-md);
   border: none;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-hover) 100%
+  );
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -710,7 +792,9 @@ async function deleteDeal() {
 
 .fade-enter-active .modal-content,
 .fade-leave-active .modal-content {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
 }
 
 /* Drawer Styles (Jira-Inspired Detail Sidebar) */
