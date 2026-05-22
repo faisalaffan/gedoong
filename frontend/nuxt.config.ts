@@ -16,6 +16,8 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/supabase'],
 
   supabase: {
+    url: process.env.SUPABASE_URL || 'https://pkcjhfuelyexpsypqcct.supabase.co',
+    key: process.env.SUPABASE_KEY || 'sb_publishable_RY2OFo6z33oRZlIVMh3Lyg_-asO0pQI',
     redirect: false,
   },
 
