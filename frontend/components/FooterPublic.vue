@@ -3,10 +3,15 @@
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="footer-logo">
-          <img src="/02_LOGO_TRANSPARENT.png" alt="Gedoong Logo" class="footer-logo-img" />
+          <img
+            src="/02_LOGO_TRANSPARENT.png"
+            alt="Gedoong Logo"
+            class="footer-logo-img"
+          />
         </div>
         <p class="footer-desc">
-          Platform properti terpercaya yang menghubungkan pencari properti dengan agen-agen independen di seluruh Indonesia.
+          Platform properti terpercaya yang menghubungkan pencari properti
+          dengan agen-agen independen di seluruh Indonesia.
         </p>
       </div>
       <div class="footer-links">
@@ -35,7 +40,10 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <p>&copy; {{ new Date().getFullYear() }} Gedoong. Seluruh hak cipta dilindungi.</p>
+      <p>
+        &copy; {{ new Date().getFullYear() }} Gedoong. Seluruh hak cipta
+        dilindungi.
+      </p>
     </div>
   </footer>
 </template>

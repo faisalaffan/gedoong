@@ -15,6 +15,14 @@ const stageConfigs = [
 
 const stages = ref(stageConfigs.map(c => ({ ...c, deals: [] as Deal[] })))
 
+const isModalOpen = ref(false)
+const newDeal = ref({
+  name: '',
+  properti: '',
+  harga: '',
+  stage: 'Prospek'
+})
+
 onMounted(async () => {
   await seedDb()
   await loadDeals()
@@ -41,6 +49,39 @@ async function onChange(event: any, stageLabel: string) {
       }
     })
   }
+}
+
+function openModal() {
+  newDeal.value = {
+    name: '',
+    properti: '',
+    harga: '',
+    stage: 'Prospek'
+  }
+  isModalOpen.value = true
+}
+
+function closeModal() {
+  isModalOpen.value = false
+}
+
+async function addNewDeal() {
+  if (!newDeal.value.name.trim() || !newDeal.value.properti.trim() || !newDeal.value.harga.trim()) {
+    return
+  }
+
+  const currentStageCount = stages.value.find(s => s.label === newDeal.value.stage)?.deals.length || 0
+
+  await db.deals.add({
+    name: newDeal.value.name.trim(),
+    properti: newDeal.value.properti.trim(),
+    harga: newDeal.value.harga.trim(),
+    stage: newDeal.value.stage,
+    order: currentStageCount
+  })
+
+  await loadDeals()
+  closeModal()
 }
 </script>
 
@@ -87,6 +128,92 @@ async function onChange(event: any, stageLabel: string) {
         </draggable>
       </div>
     </div>
+
+    <!-- Floating Action Button (FAB) -->
+    <button class="fab-btn" @click="openModal" title="Tambah Pipeline Baru">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
+    <!-- Modal Form Tambah Pipeline -->
+    <Transition name="fade">
+      <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+        <div class="modal-content glass-panel">
+          <div class="modal-header">
+            <h3 class="modal-title">Tambah Pipeline Baru</h3>
+            <button class="close-btn" @click="closeModal" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="addNewDeal" class="modal-form">
+            <div class="form-group">
+              <label for="client-name" class="form-label">Nama Klien</label>
+              <input
+                id="client-name"
+                v-model="newDeal.name"
+                type="text"
+                class="form-input"
+                placeholder="Contoh: John Doe"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="property" class="form-label">Properti</label>
+              <input
+                id="property"
+                v-model="newDeal.properti"
+                type="text"
+                class="form-input"
+                placeholder="Contoh: Rumah Jaksel / Ruko BSD"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="price" class="form-label">Harga / Nilai Deal</label>
+              <input
+                id="price"
+                v-model="newDeal.harga"
+                type="text"
+                class="form-input"
+                placeholder="Contoh: Rp 850jt"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="stage-select" class="form-label">Stage Awal</label>
+              <select
+                id="stage-select"
+                v-model="newDeal.stage"
+                class="form-select"
+                required
+              >
+                <option
+                  v-for="config in stageConfigs"
+                  :key="config.label"
+                  :value="config.label"
+                >
+                  {{ config.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-cancel" @click="closeModal">Batal</button>
+              <button type="submit" class="btn-submit">Simpan Deal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -205,5 +332,208 @@ async function onChange(event: any, stageLabel: string) {
 
 .deal-card:active {
   cursor: grabbing;
+}
+
+/* FAB Button Styles */
+.fab-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 82, 204, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all var(--transition-normal);
+}
+
+.fab-btn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(0, 82, 204, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fab-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(11, 28, 48, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  transition: opacity var(--transition-normal);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+  transform: translateY(0);
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-dark);
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.form-input,
+.form-select {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-slate);
+  background: #fff;
+  font-size: 14px;
+  color: var(--text-dark);
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-slate);
+  background: transparent;
+  color: var(--text-medium);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-cancel:hover {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: var(--text-muted);
+}
+
+.btn-submit {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);
+  transition: all var(--transition-fast);
+}
+
+.btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 82, 204, 0.3);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+/* Animations using Transition */
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+/* Modal Content zoom animation */
+.fade-enter-from .modal-content {
+  transform: scale(0.9) translateY(20px);
+  opacity: 0;
+}
+
+.fade-leave-to .modal-content {
+  transform: scale(0.9) translateY(20px);
+  opacity: 0;
+}
+
+.fade-enter-active .modal-content,
+.fade-leave-active .modal-content {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
 }
 </style>
