@@ -84,6 +84,14 @@ cd frontend && npm run dev
 cd mobile && flutter run
 ```
 
+### Supabase Social Authentication Setup
+To configure **Google Sign-In** and **Apple Sign-In** with Supabase for local development and production, refer to our detailed [Supabase OAuth Setup Guide](docs/SUPABASE_OAUTH_SETUP.md).
+
+You can also run our interactive setup CLI tool to configure it automatically:
+```bash
+make setup-oauth
+```
+
 ---
 
 ## License

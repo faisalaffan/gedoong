@@ -47,13 +47,13 @@ gedoong/
 └── docs/             # Dokumentasi
 ```
 
-| Layer | Tech |
-|---|---|
-| Backend | Go |
-| Frontend | Nuxt |
-| Mobile | Flutter |
-| Database | MySQL |
-| Caching | Redis |
+| Layer    | Tech    |
+| -------- | ------- |
+| Backend  | Go      |
+| Frontend | Nuxt    |
+| Mobile   | Flutter |
+| Database | MySQL   |
+| Caching  | Redis   |
 
 ---
 
@@ -82,6 +82,16 @@ cd frontend && npm run dev
 
 # Mobile
 cd mobile && flutter run
+```
+
+### Setup Autentikasi Sosial Supabase
+
+Untuk mengonfigurasi **Google Sign-In** dan **Apple Sign-In** menggunakan Supabase baik di lokal maupun production, silakan merujuk pada [Panduan Konfigurasi Supabase OAuth](docs/SUPABASE_OAUTH_SETUP.md).
+
+Anda juga dapat menjalankan CLI otomasi interaktif untuk mengonfigurasinya secara otomatis:
+
+```bash
+make setup-oauth
 ```
 
 ---

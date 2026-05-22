@@ -75,3 +75,10 @@ docker-build: ## Build semua Docker image
 
 docker-push: ## Push Docker image ke registry
 	docker compose push
+
+# ── Setup/Utilitas ────────────────────────────────────────
+
+setup-oauth: ## Jalankan CLI otomatisasi konfigurasi Supabase Google & Apple Auth
+	@chmod +x scripts/setup-supabase-oauth.sh
+	@./scripts/setup-supabase-oauth.sh
+
