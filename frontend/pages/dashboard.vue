@@ -1,19 +1,76 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { db } from '~/utils/db'
+import { listings } from '~/data/listings'
+
 definePageMeta({ layout: 'dashboard' })
 
-const stats = [
-  { label: 'Total Listing', value: '24', color: '#0052CC' },
-  { label: 'Deal Bulan Ini', value: '8', color: '#16a34a' },
-  { label: 'Follow-up Aktif', value: '12', color: '#e07b00' },
-  { label: 'Komisi Bulan Ini', value: 'Rp 42jt', color: '#0052CC' },
-]
+const totalListings = ref(0)
+const dealCount = ref(0)
+const followUpCount = ref(0)
+const totalCommission = ref('Rp 0jt')
 
-const activities = [
-  'Budi menambahkan listing baru "Rumah Minimalis Jaksel" — 2 jam lalu',
-  'Siti (klien) pindah ke tahap Nego — 5 jam lalu',
-  'Komisi Rp 5jt diproses untuk Apartemen Greenlake — kemarin',
-  'Andi (klien) dijadwalkan follow-up besok — 8 jam lalu',
-]
+const pipelineStages = ref([
+  { label: 'Prospek', count: 0 },
+  { label: 'Follow-up', count: 0 },
+  { label: 'Nego', count: 0 },
+  { label: 'Closing', count: 0 },
+  { label: 'Deal', count: 0 },
+])
+
+const activities = ref<string[]>([])
+
+onMounted(async () => {
+  // 1. Total listings count from static listings
+  totalListings.value = listings.length
+
+  // 2. Fetch all deals from IndexedDB
+  const allDeals = await db.deals.toArray()
+  
+  // 3. Count stages
+  dealCount.value = allDeals.filter(d => d.stage === 'Deal').length
+  followUpCount.value = allDeals.filter(d => d.stage === 'Follow-up').length
+
+  // 4. Calculate total paid commission
+  const allCommissions = await db.komisi.toArray()
+  const paidCommissions = allCommissions.filter(k => k.status === 'Dibayar')
+  const totalPaid = paidCommissions.reduce((acc, curr) => {
+    const val = parseInt(curr.komisi.replace(/\D/g, "")) || 0
+    return acc + val
+  }, 0)
+  totalCommission.value = `Rp ${totalPaid}jt`
+
+  // 5. Aggregate pipeline summary stage count
+  pipelineStages.value.forEach(stage => {
+    stage.count = allDeals.filter(d => d.stage === stage.label).length
+  })
+
+  // 6. Generate dynamic recent activities
+  const allClients = await db.kliens.toArray()
+  const list: string[] = []
+
+  // Add deals activities
+  allDeals.slice(-2).forEach(deal => {
+    list.push(`Kesepakatan dengan ${deal.name} untuk properti "${deal.properti}" berada di tahap ${deal.stage}.`)
+  })
+
+  // Add commission activities
+  allCommissions.slice(-2).forEach(k => {
+    list.push(`Pencatatan keuangan: Komisi ${k.komisi} untuk "${k.properti}" saat ini berstatus ${k.status}.`)
+  })
+
+  // Add client list activities
+  allClients.slice(-2).forEach(c => {
+    list.push(`Data kontak klien "${c.nama}" (${c.kontak}) siap dikelola di direktori.`)
+  })
+
+  // Fallback if no records yet
+  if (list.length === 0) {
+    list.push('Belum ada aktivitas tercatat di sistem.')
+  }
+
+  activities.value = list.reverse()
+})
 </script>
 
 <template>
@@ -21,13 +78,21 @@ const activities = [
     <h2 class="page-title">Dashboard</h2>
 
     <div class="stats-grid">
-      <div
-        v-for="stat in stats"
-        :key="stat.label"
-        class="stat-card"
-      >
-        <div class="stat-value" :style="{ color: stat.color }">{{ stat.value }}</div>
-        <div class="stat-label">{{ stat.label }}</div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #0052CC">{{ totalListings }}</div>
+        <div class="stat-label">Total Listing</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #16a34a">{{ dealCount }}</div>
+        <div class="stat-label">Deal Bulan Ini</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #e07b00">{{ followUpCount }}</div>
+        <div class="stat-label">Follow-up Aktif</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #0052CC">{{ totalCommission }}</div>
+        <div class="stat-label">Komisi Bulan Ini</div>
       </div>
     </div>
 
@@ -44,11 +109,14 @@ const activities = [
       <div class="card card-pipeline">
         <h3 class="card-title">Pipeline Summary</h3>
         <div class="pipeline-summary">
-          <div class="pipeline-stage"><span class="stage-label">Prospek</span><span class="stage-count">15</span></div>
-          <div class="pipeline-stage"><span class="stage-label">Follow-up</span><span class="stage-count">12</span></div>
-          <div class="pipeline-stage"><span class="stage-label">Nego</span><span class="stage-count">4</span></div>
-          <div class="pipeline-stage"><span class="stage-label">Closing</span><span class="stage-count">3</span></div>
-          <div class="pipeline-stage"><span class="stage-label">Deal</span><span class="stage-count">8</span></div>
+          <div
+            v-for="stage in pipelineStages"
+            :key="stage.label"
+            class="pipeline-stage"
+          >
+            <span class="stage-label">{{ stage.label }}</span>
+            <span class="stage-count">{{ stage.count }}</span>
+          </div>
         </div>
       </div>
     </div>
