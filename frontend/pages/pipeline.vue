@@ -83,6 +83,61 @@ async function addNewDeal() {
   await loadDeals()
   closeModal()
 }
+
+const isDrawerOpen = ref(false)
+const selectedDeal = ref<Deal>({
+  name: '',
+  properti: '',
+  harga: '',
+  stage: 'Prospek',
+  order: 0,
+  deskripsi: ''
+})
+let originalStage = ''
+
+function openDrawer(deal: Deal) {
+  selectedDeal.value = { ...deal, deskripsi: deal.deskripsi || '' }
+  originalStage = deal.stage
+  isDrawerOpen.value = true
+}
+
+function closeDrawer() {
+  isDrawerOpen.value = false
+}
+
+async function updateDeal() {
+  if (!selectedDeal.value.id) return
+
+  const dealId = selectedDeal.value.id
+  const hasStageChanged = selectedDeal.value.stage !== originalStage
+
+  let newOrder = selectedDeal.value.order
+  if (hasStageChanged) {
+    newOrder = stages.value.find(s => s.label === selectedDeal.value.stage)?.deals.length || 0
+  }
+
+  await db.deals.update(dealId, {
+    name: selectedDeal.value.name.trim(),
+    properti: selectedDeal.value.properti.trim(),
+    harga: selectedDeal.value.harga.trim(),
+    stage: selectedDeal.value.stage,
+    order: newOrder,
+    deskripsi: (selectedDeal.value.deskripsi || '').trim()
+  })
+
+  await loadDeals()
+  closeDrawer()
+}
+
+async function deleteDeal() {
+  if (!selectedDeal.value.id) return
+
+  if (confirm(`Apakah Anda yakin ingin menghapus deal untuk ${selectedDeal.value.name}?`)) {
+    await db.deals.delete(selectedDeal.value.id)
+    await loadDeals()
+    closeDrawer()
+  }
+}
 </script>
 
 <template>
@@ -113,6 +168,7 @@ async function addNewDeal() {
             <div
               class="deal-card"
               :style="{ borderLeftColor: stage.color }"
+              @click="openDrawer(element)"
             >
               <div class="deal-name">{{ element.name }}</div>
               <div class="deal-properti">{{ element.properti }}</div>
@@ -214,6 +270,118 @@ async function addNewDeal() {
         </div>
       </div>
     </Transition>
+
+    <!-- Detail Drawer (Slide-out Sidebar) -->
+    <Transition name="slide">
+      <div v-if="isDrawerOpen" class="drawer-overlay" @click.self="closeDrawer">
+        <div class="drawer-content glass-panel">
+          <div class="drawer-header-jira">
+            <div class="breadcrumbs">
+              <span>Pipeline</span>
+              <span class="divider">/</span>
+              <span class="item-id">DEAL-#{{ selectedDeal.id }}</span>
+            </div>
+            <button class="close-btn" @click="closeDrawer" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="drawer-body">
+            <form @submit.prevent="updateDeal" class="drawer-form">
+              <div class="form-group-title">
+                <input
+                  id="drawer-client"
+                  v-model="selectedDeal.name"
+                  type="text"
+                  class="form-input-title"
+                  placeholder="Nama Klien..."
+                  required
+                />
+              </div>
+
+              <!-- Section: Details -->
+              <div class="drawer-section">
+                <h4 class="section-title">Detail</h4>
+                
+                <div class="section-grid">
+                  <div class="grid-label">Properti</div>
+                  <div class="grid-value">
+                    <input
+                      v-model="selectedDeal.properti"
+                      type="text"
+                      class="form-input-inline"
+                      placeholder="Nama Properti"
+                      required
+                    />
+                  </div>
+
+                  <div class="grid-label">Harga / Nilai</div>
+                  <div class="grid-value">
+                    <input
+                      v-model="selectedDeal.harga"
+                      type="text"
+                      class="form-input-inline"
+                      placeholder="Nilai Deal"
+                      required
+                    />
+                  </div>
+
+                  <div class="grid-label">Stage</div>
+                  <div class="grid-value">
+                    <div class="select-badge-wrapper" :style="{ '--badge-color': stageConfigs.find(c => c.label === selectedDeal.stage)?.color || '#0052CC' }">
+                      <select
+                        v-model="selectedDeal.stage"
+                        class="form-select-inline"
+                        required
+                      >
+                        <option
+                          v-for="config in stageConfigs"
+                          :key="config.label"
+                          :value="config.label"
+                        >
+                          {{ config.label }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: Description -->
+              <div class="drawer-section">
+                <h4 class="section-title">Deskripsi</h4>
+                <textarea
+                  v-model="selectedDeal.deskripsi"
+                  class="form-textarea-description"
+                  placeholder="Tambahkan deskripsi / catatan aktivitas untuk deal ini di sini..."
+                  rows="6"
+                ></textarea>
+              </div>
+
+              <!-- Action buttons at bottom -->
+              <div class="drawer-actions">
+                <button type="button" class="btn-delete" @click="deleteDeal">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-trash">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  Hapus Deal
+                </button>
+                <div class="main-actions">
+                  <button type="button" class="btn-cancel" @click="closeDrawer">Batal</button>
+                  <button type="submit" class="btn-submit">Simpan Perubahan</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -281,6 +449,14 @@ async function addNewDeal() {
   padding: 12px;
   border-left: 3px solid #0052CC;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border var(--transition-fast);
+}
+
+.deal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-right: 1px solid rgba(0, 82, 204, 0.08);
 }
 
 .deal-name {
@@ -327,7 +503,7 @@ async function addNewDeal() {
 }
 
 .deal-card {
-  cursor: grab;
+  cursor: pointer;
 }
 
 .deal-card:active {
@@ -535,5 +711,289 @@ async function addNewDeal() {
 .fade-enter-active .modal-content,
 .fade-leave-active .modal-content {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+/* Drawer Styles (Jira-Inspired Detail Sidebar) */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(9, 30, 66, 0.4); /* Standard Jira backdrop */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 2000;
+  transition: opacity var(--transition-normal);
+}
+
+.drawer-content {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -8px 0 32px rgba(9, 30, 66, 0.15);
+  border-left: 1px solid var(--border-light);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
+  transition: transform var(--transition-normal);
+}
+
+.drawer-header-jira {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.breadcrumbs .divider {
+  color: rgba(115, 118, 133, 0.4);
+}
+
+.breadcrumbs .item-id {
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.drawer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  height: 100%;
+}
+
+.form-group-title {
+  margin-bottom: 4px;
+}
+
+.form-input-title {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all var(--transition-fast);
+  margin-left: -8px;
+}
+
+.form-input-title:hover {
+  background: rgba(9, 30, 66, 0.04);
+}
+
+.form-input-title:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(115, 118, 133, 0.15);
+  padding-bottom: 6px;
+}
+
+/* Detail Section Grid */
+.section-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 16px;
+  column-gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.grid-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.grid-value {
+  color: var(--text-dark);
+}
+
+.form-input-inline,
+.form-select-inline {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-dark);
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.form-input-inline:hover,
+.form-select-inline:hover {
+  background: rgba(9, 30, 66, 0.04);
+}
+
+.form-input-inline:focus,
+.form-select-inline:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Status Select Badge wrapper */
+.select-badge-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.select-badge-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--badge-color, var(--primary));
+  pointer-events: none;
+  transition: background var(--transition-fast);
+}
+
+.form-select-inline {
+  padding-left: 28px;
+  font-weight: 600;
+}
+
+/* Description Textarea */
+.form-textarea-description {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(115, 118, 133, 0.2);
+  background: #fafbfc;
+  font-size: 14px;
+  color: var(--text-dark);
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.form-textarea-description:hover {
+  background: #f4f5f7;
+  border-color: rgba(115, 118, 133, 0.35);
+}
+
+.form-textarea-description:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Actions in Drawer */
+.drawer-actions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(115, 118, 133, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-delete {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(186, 26, 26, 0.2);
+  background: rgba(186, 26, 26, 0.05);
+  color: var(--error);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.btn-delete:hover {
+  background: var(--error);
+  color: white;
+  border-color: var(--error);
+  box-shadow: 0 4px 12px rgba(186, 26, 26, 0.2);
+}
+
+.btn-delete .icon-trash {
+  transition: transform var(--transition-fast);
+}
+
+.btn-delete:hover .icon-trash {
+  transform: scale(1.1);
+}
+
+/* Slide Transition classes */
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: opacity var(--transition-normal) ease;
+}
+
+.slide-enter-from .drawer-content {
+  transform: translateX(100%);
+}
+
+.slide-leave-to .drawer-content {
+  transform: translateX(100%);
+}
+
+.slide-enter-active .drawer-content,
+.slide-leave-active .drawer-content {
+  transition: transform var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>

@@ -7,7 +7,9 @@ export interface Deal {
   harga: string
   stage: string
   order: number
+  deskripsi?: string
 }
+
 
 export interface Klien {
   id?: number
