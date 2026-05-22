@@ -20,8 +20,15 @@ const pipelineStages = ref([
 const activities = ref<string[]>([])
 
 onMounted(async () => {
-  // 1. Total listings count from IndexedDB listings
-  totalListings.value = await db.listings.count()
+  // 1. Total listings count from Supabase listings table
+  const supabase = useSupabaseClient()
+  const { count, error: countError } = await supabase
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+  
+  if (!countError && count !== null) {
+    totalListings.value = count
+  }
 
   // 2. Fetch all deals from IndexedDB
   const allDeals = await db.deals.toArray()

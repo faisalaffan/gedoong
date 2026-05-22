@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { db, type Listing } from '~/utils/db'
 
 definePageMeta({ layout: 'dashboard' })
 
+interface Listing {
+  id?: number
+  properti: string
+  tipe: 'Jual' | 'Sewa'
+  harga: string
+  status: 'Aktif' | 'Terjual' | 'Draft'
+  lokasi?: string
+  kamar_tidur?: number
+  kamar_mandi?: number
+  luas?: number
+  image_url?: string
+}
+
 const listingsList = ref<Listing[]>([])
 const isModalOpen = ref(false)
+const supabase = useSupabaseClient()
 
 // Form fields for adding new listing
 const formProperti = ref('')
@@ -20,9 +33,20 @@ const formLuas = ref<number | null>(null)
 const search = ref('')
 const filterTipe = ref('')
 
-// Load all listings from Dexie DB
+// Load all listings from Supabase
 async function loadListings() {
-  listingsList.value = await db.listings.toArray()
+  const { data, error } = await supabase
+    .from('listings')
+    .select('*')
+    .order('id', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching listings:', error.message)
+    return
+  }
+  if (data) {
+    listingsList.value = data
+  }
 }
 
 onMounted(() => {
@@ -64,19 +88,25 @@ async function handleAddListing() {
   // Pick a random premium preset image
   const randomImage = defaultHouseImages[Math.floor(Math.random() * defaultHouseImages.length)]
 
-  const newListing: Listing = {
+  const newListing = {
     properti: formProperti.value,
     tipe: formTipe.value,
     harga: formHarga.value,
     status: formStatus.value,
-    lokasi: formLokasi.value || undefined,
-    kamarTidur: formKamarTidur.value !== null ? Number(formKamarTidur.value) : undefined,
-    kamarMandi: formKamarMandi.value !== null ? Number(formKamarMandi.value) : undefined,
-    luas: formLuas.value !== null ? Number(formLuas.value) : undefined,
-    imageUrl: randomImage
+    lokasi: formLokasi.value || null,
+    kamar_tidur: formKamarTidur.value !== null ? Number(formKamarTidur.value) : null,
+    kamar_mandi: formKamarMandi.value !== null ? Number(formKamarMandi.value) : null,
+    luas: formLuas.value !== null ? Number(formLuas.value) : null,
+    image_url: randomImage
   }
 
-  await db.listings.add(newListing)
+  const { error } = await supabase.from('listings').insert([newListing])
+
+  if (error) {
+    alert('Gagal menambahkan listing ke Supabase: ' + error.message)
+    return
+  }
+
   await loadListings()
   closeModal()
 }
@@ -134,7 +164,7 @@ function statusClass(status: string) {
           <tr v-for="l in filteredListings" :key="l.id">
             <td class="cell-properti">
               <div class="properti-cell-content">
-                <img v-if="l.imageUrl" :src="l.imageUrl" class="properti-thumb" />
+                <img v-if="l.image_url" :src="l.image_url" class="properti-thumb" />
                 <div class="properti-info">
                   <span class="properti-name">{{ l.properti }}</span>
                   <span class="properti-location" v-if="l.lokasi">{{ l.lokasi }}</span>
@@ -146,7 +176,7 @@ function statusClass(status: string) {
             <td><span class="status-badge" :class="statusClass(l.status)">{{ l.status }}</span></td>
           </tr>
           <tr v-if="filteredListings.length === 0">
-            <td colspan="4" class="no-data">Tidak ada listing yang ditemukan.</td>
+            <td colspan="4" class="no-data">Tidak ada listing yang ditemukan di Supabase.</td>
           </tr>
         </tbody>
       </table>

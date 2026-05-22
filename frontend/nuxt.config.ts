@@ -13,7 +13,11 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: [],
+  modules: ['@nuxtjs/supabase'],
+
+  supabase: {
+    redirect: false,
+  },
 
   css: ['~/assets/css/global.css'],
 
