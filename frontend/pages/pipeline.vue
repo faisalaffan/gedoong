@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import draggable from "vuedraggable";
-import { db, seedDb, type Deal } from "~/utils/db";
+import { useDealStore } from "~/stores/deal";
+import { useToast } from "~/composables/useToast";
+import type { Deal } from "~/types/deal";
+import ToastContainer from "~/components/listing/ToastContainer.vue";
 
 definePageMeta({ layout: "dashboard" });
+
+const store = useDealStore();
+const { toasts, showToast } = useToast();
 
 const stageConfigs = [
   { label: "Prospek", color: "#0052CC" },
@@ -15,7 +21,6 @@ const stageConfigs = [
 
 const stages = ref(stageConfigs.map((c) => ({ ...c, deals: [] as Deal[] })));
 
-const isModalOpen = ref(false);
 const newDeal = ref({
   name: "",
   properti: "",
@@ -23,31 +28,28 @@ const newDeal = ref({
   stage: "Prospek",
 });
 
+let originalStage = "";
+
+// Sync local stages list with store.deals whenever it updates
+watch(
+  () => store.deals,
+  (newDeals) => {
+    stages.value.forEach((stage) => {
+      stage.deals = newDeals.filter((d) => d.stage === stage.label);
+    });
+  },
+  { deep: true, immediate: true }
+);
+
 onMounted(async () => {
-  await seedDb();
-  await loadDeals();
+  await store.fetchDeals();
 });
-
-async function loadDeals() {
-  const allDeals = await db.deals.toArray();
-  allDeals.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-  stages.value.forEach((stage) => {
-    stage.deals = allDeals.filter((d) => d.stage === stage.label);
-  });
-}
 
 async function onChange(event: any, stageLabel: string) {
   const stage = stages.value.find((s) => s.label === stageLabel);
   if (stage) {
-    await db.transaction("rw", db.deals, async () => {
-      for (let i = 0; i < stage.deals.length; i++) {
-        const deal = stage.deals[i];
-        if (deal.id) {
-          await db.deals.update(deal.id, { stage: stageLabel, order: i });
-        }
-      }
-    });
+    // Sync the stage's new card sequence immediately to Supabase
+    await store.updateDealStageAndOrder(stageLabel, stage.deals);
   }
 }
 
@@ -58,11 +60,7 @@ function openModal() {
     harga: "",
     stage: "Prospek",
   };
-  isModalOpen.value = true;
-}
-
-function closeModal() {
-  isModalOpen.value = false;
+  store.openModal();
 }
 
 async function addNewDeal() {
@@ -71,6 +69,7 @@ async function addNewDeal() {
     !newDeal.value.properti.trim() ||
     !newDeal.value.harga.trim()
   ) {
+    showToast("Silakan isi semua data deal!", "error");
     return;
   }
 
@@ -78,82 +77,76 @@ async function addNewDeal() {
     stages.value.find((s) => s.label === newDeal.value.stage)?.deals.length ||
     0;
 
-  await db.deals.add({
-    name: newDeal.value.name.trim(),
-    properti: newDeal.value.properti.trim(),
-    harga: newDeal.value.harga.trim(),
-    stage: newDeal.value.stage,
-    order: currentStageCount,
-  });
-
-  await loadDeals();
-  closeModal();
+  try {
+    await store.saveNewDeal({
+      name: newDeal.value.name.trim(),
+      properti: newDeal.value.properti.trim(),
+      harga: newDeal.value.harga.trim(),
+      stage: newDeal.value.stage as any,
+      order: currentStageCount,
+    });
+    showToast("Deal baru berhasil ditambahkan ke pipeline!", "success");
+  } catch (err: any) {
+    showToast(err.message || "Gagal menyimpan deal", "error");
+  }
 }
-
-const isDrawerOpen = ref(false);
-const selectedDeal = ref<Deal>({
-  name: "",
-  properti: "",
-  harga: "",
-  stage: "Prospek",
-  order: 0,
-  deskripsi: "",
-});
-let originalStage = "";
 
 function openDrawer(deal: Deal) {
-  selectedDeal.value = { ...deal, deskripsi: deal.deskripsi || "" };
   originalStage = deal.stage;
-  isDrawerOpen.value = true;
+  store.openDrawer(deal);
 }
 
-function closeDrawer() {
-  isDrawerOpen.value = false;
-}
+async function handleUpdateDeal() {
+  if (!store.selectedDeal?.id) return;
 
-async function updateDeal() {
-  if (!selectedDeal.value.id) return;
+  const dealId = store.selectedDeal.id;
+  const hasStageChanged = store.selectedDeal.stage !== originalStage;
 
-  const dealId = selectedDeal.value.id;
-  const hasStageChanged = selectedDeal.value.stage !== originalStage;
-
-  let newOrder = selectedDeal.value.order;
+  let newOrder = store.selectedDeal.order;
   if (hasStageChanged) {
     newOrder =
-      stages.value.find((s) => s.label === selectedDeal.value.stage)?.deals
+      stages.value.find((s) => s.label === store.selectedDeal?.stage)?.deals
         .length || 0;
   }
 
-  await db.deals.update(dealId, {
-    name: selectedDeal.value.name.trim(),
-    properti: selectedDeal.value.properti.trim(),
-    harga: selectedDeal.value.harga.trim(),
-    stage: selectedDeal.value.stage,
-    order: newOrder,
-    deskripsi: (selectedDeal.value.deskripsi || "").trim(),
-  });
-
-  await loadDeals();
-  closeDrawer();
+  try {
+    await store.updateDeal({
+      name: store.selectedDeal.name.trim(),
+      properti: store.selectedDeal.properti.trim(),
+      harga: store.selectedDeal.harga.trim(),
+      stage: store.selectedDeal.stage,
+      order: newOrder,
+      deskripsi: (store.selectedDeal.deskripsi || "").trim(),
+    }, dealId);
+    showToast("Detail deal berhasil diperbarui!", "success");
+  } catch (err: any) {
+    showToast(err.message || "Gagal memperbarui deal", "error");
+  }
 }
 
-async function deleteDeal() {
-  if (!selectedDeal.value.id) return;
+async function handleDeleteDeal() {
+  if (!store.selectedDeal?.id) return;
 
   if (
     confirm(
-      `Apakah Anda yakin ingin menghapus deal untuk ${selectedDeal.value.name}?`,
+      `Apakah Anda yakin ingin menghapus deal untuk ${store.selectedDeal.name}?`,
     )
   ) {
-    await db.deals.delete(selectedDeal.value.id);
-    await loadDeals();
-    closeDrawer();
+    try {
+      await store.deleteDeal(store.selectedDeal.id);
+      showToast("Deal berhasil dihapus dari pipeline!", "success");
+    } catch (err: any) {
+      showToast(err.message || "Gagal menghapus deal", "error");
+    }
   }
 }
 </script>
 
 <template>
   <div class="pipeline-page">
+    <!-- Toast Notification System -->
+    <ToastContainer :toasts="toasts" />
+
     <h2 class="page-title">Pipeline Kanban</h2>
 
     <div class="kanban-board">
@@ -211,11 +204,11 @@ async function deleteDeal() {
 
     <!-- Modal Form Tambah Pipeline -->
     <Transition name="fade">
-      <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <div v-if="store.isModalOpen" class="modal-overlay" @click.self="store.closeModal">
         <div class="modal-content glass-panel">
           <div class="modal-header">
             <h3 class="modal-title">Tambah Pipeline Baru</h3>
-            <button class="close-btn" @click="closeModal" type="button">
+            <button class="close-btn" @click="store.closeModal" type="button">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -289,7 +282,7 @@ async function deleteDeal() {
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn-cancel" @click="closeModal">
+              <button type="button" class="btn-cancel" @click="store.closeModal">
                 Batal
               </button>
               <button type="submit" class="btn-submit">Simpan Deal</button>
@@ -301,15 +294,15 @@ async function deleteDeal() {
 
     <!-- Detail Drawer (Slide-out Sidebar) -->
     <Transition name="slide">
-      <div v-if="isDrawerOpen" class="drawer-overlay" @click.self="closeDrawer">
-        <div class="drawer-content glass-panel">
+      <div v-if="store.isDrawerOpen" class="drawer-overlay" @click.self="store.closeDrawer">
+        <div class="drawer-content glass-panel" v-if="store.selectedDeal">
           <div class="drawer-header-jira">
             <div class="breadcrumbs">
               <span>Pipeline</span>
               <span class="divider">/</span>
-              <span class="item-id">DEAL-#{{ selectedDeal.id }}</span>
+              <span class="item-id">DEAL-#{{ store.selectedDeal.id }}</span>
             </div>
-            <button class="close-btn" @click="closeDrawer" type="button">
+            <button class="close-btn" @click="store.closeDrawer" type="button">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -328,11 +321,11 @@ async function deleteDeal() {
           </div>
 
           <div class="drawer-body">
-            <form @submit.prevent="updateDeal" class="drawer-form">
+            <form @submit.prevent="handleUpdateDeal" class="drawer-form">
               <div class="form-group-title">
                 <input
                   id="drawer-client"
-                  v-model="selectedDeal.name"
+                  v-model="store.selectedDeal.name"
                   type="text"
                   class="form-input-title"
                   placeholder="Nama Klien..."
@@ -348,7 +341,7 @@ async function deleteDeal() {
                   <div class="grid-label">Properti</div>
                   <div class="grid-value">
                     <input
-                      v-model="selectedDeal.properti"
+                      v-model="store.selectedDeal.properti"
                       type="text"
                       class="form-input-inline"
                       placeholder="Nama Properti"
@@ -359,7 +352,7 @@ async function deleteDeal() {
                   <div class="grid-label">Harga / Nilai</div>
                   <div class="grid-value">
                     <input
-                      v-model="selectedDeal.harga"
+                      v-model="store.selectedDeal.harga"
                       type="text"
                       class="form-input-inline"
                       placeholder="Nilai Deal"
@@ -374,12 +367,12 @@ async function deleteDeal() {
                       :style="{
                         '--badge-color':
                           stageConfigs.find(
-                            (c) => c.label === selectedDeal.stage,
+                            (c) => c.label === store.selectedDeal?.stage,
                           )?.color || '#0052CC',
                       }"
                     >
                       <select
-                        v-model="selectedDeal.stage"
+                        v-model="store.selectedDeal.stage"
                         class="form-select-inline"
                         required
                       >
@@ -400,7 +393,7 @@ async function deleteDeal() {
               <div class="drawer-section">
                 <h4 class="section-title">Deskripsi</h4>
                 <textarea
-                  v-model="selectedDeal.deskripsi"
+                  v-model="store.selectedDeal.deskripsi"
                   class="form-textarea-description"
                   placeholder="Tambahkan deskripsi / catatan aktivitas untuk deal ini di sini..."
                   rows="6"
@@ -409,7 +402,7 @@ async function deleteDeal() {
 
               <!-- Action buttons at bottom -->
               <div class="drawer-actions">
-                <button type="button" class="btn-delete" @click="deleteDeal">
+                <button type="button" class="btn-delete" @click="handleDeleteDeal">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -432,7 +425,7 @@ async function deleteDeal() {
                   Hapus Deal
                 </button>
                 <div class="main-actions">
-                  <button type="button" class="btn-cancel" @click="closeDrawer">
+                  <button type="button" class="btn-cancel" @click="store.closeDrawer">
                     Batal
                   </button>
                   <button type="submit" class="btn-submit">
@@ -454,7 +447,8 @@ async function deleteDeal() {
 }
 
 .page-title {
-  font-size: 22px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
   font-weight: 700;
   color: #041b3c;
   margin-bottom: 24px;
@@ -586,8 +580,8 @@ async function deleteDeal() {
   border-radius: 50%;
   background: linear-gradient(
     135deg,
-    var(--primary) 0%,
-    var(--primary-hover) 100%
+    #0052cc 0%,
+    #003d9b 100%
   );
   color: white;
   border: none;
@@ -599,7 +593,7 @@ async function deleteDeal() {
   justify-content: center;
   cursor: pointer;
   z-index: 1000;
-  transition: all var(--transition-normal);
+  transition: all 0.2s ease;
 }
 
 .fab-btn:hover {
@@ -627,21 +621,21 @@ async function deleteDeal() {
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  transition: opacity var(--transition-normal);
+  transition: opacity 0.25s ease;
 }
 
 .modal-content {
   width: 100%;
   max-width: 460px;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   padding: 28px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  border: 1px solid rgba(220, 225, 240, 0.4);
   transform: translateY(0);
   transition:
-    transform var(--transition-normal),
-    opacity var(--transition-normal);
+    transform 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .modal-header {
@@ -652,27 +646,28 @@ async function deleteDeal() {
 }
 
 .modal-title {
+  font-family: 'Outfit', sans-serif;
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #041b3c;
 }
 
 .close-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #8b8e99;
   cursor: pointer;
   padding: 6px;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
 }
 
 .close-btn:hover {
   background: rgba(0, 0, 0, 0.05);
-  color: var(--text-dark);
+  color: #041b3c;
 }
 
 .modal-form {
@@ -690,7 +685,7 @@ async function deleteDeal() {
 .form-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-medium);
+  color: #4b5563;
 }
 
 .form-input,
@@ -698,23 +693,23 @@ async function deleteDeal() {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-slate);
+  border-radius: 8px;
+  border: 1px solid #d7e2ff;
   background: #fff;
   font-size: 14px;
-  color: var(--text-dark);
-  transition: all var(--transition-fast);
+  color: #041b3c;
+  transition: all 0.15s ease;
   outline: none;
 }
 
 .form-input:focus,
 .form-select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  border-color: #0052cc;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
 }
 
 .form-input::placeholder {
-  color: var(--text-muted);
+  color: #8b8e99;
   opacity: 0.7;
 }
 
@@ -727,36 +722,36 @@ async function deleteDeal() {
 
 .btn-cancel {
   padding: 10px 20px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-slate);
+  border-radius: 8px;
+  border: 1px solid #d7e2ff;
   background: transparent;
-  color: var(--text-medium);
+  color: #4b5563;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
 }
 
 .btn-cancel:hover {
   background: rgba(0, 0, 0, 0.02);
-  border-color: var(--text-muted);
+  border-color: #8b8e99;
 }
 
 .btn-submit {
   padding: 10px 20px;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   border: none;
   background: linear-gradient(
     135deg,
-    var(--primary) 0%,
-    var(--primary-hover) 100%
+    #0052cc 0%,
+    #003d9b 100%
   );
   color: white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
 }
 
 .btn-submit:hover {
@@ -804,260 +799,245 @@ async function deleteDeal() {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(9, 30, 66, 0.4); /* Standard Jira backdrop */
+  background: rgba(11, 28, 48, 0.25);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
   justify-content: flex-end;
   z-index: 2000;
-  transition: opacity var(--transition-normal);
+  transition: opacity 0.25s ease;
 }
 
 .drawer-content {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   height: 100%;
-  background: #ffffff;
-  box-shadow: -8px 0 32px rgba(9, 30, 66, 0.15);
-  border-left: 1px solid var(--border-light);
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  border-radius: 0;
-  padding: 24px 32px;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(4, 27, 60, 0.12);
   display: flex;
   flex-direction: column;
   transform: translateX(0);
-  transition: transform var(--transition-normal);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 1px solid rgba(220, 225, 240, 0.8);
 }
 
 .drawer-header-jira {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e8ecf1;
+  background: #fdfdfd;
 }
 
 .breadcrumbs {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: #737685;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .breadcrumbs .divider {
-  color: rgba(115, 118, 133, 0.4);
+  color: #cbd5e0;
 }
 
 .breadcrumbs .item-id {
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #0052cc;
 }
 
 .drawer-body {
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 28px 24px;
 }
 
 .drawer-form {
   display: flex;
   flex-direction: column;
-  gap: 28px;
   height: 100%;
 }
 
 .form-group-title {
-  margin-bottom: 4px;
+  margin-bottom: 24px;
 }
 
 .form-input-title {
   width: 100%;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-dark);
   border: 1px solid transparent;
   background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #041b3c;
   padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  outline: none;
-  transition: all var(--transition-fast);
   margin-left: -8px;
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.15s ease;
 }
 
 .form-input-title:hover {
-  background: rgba(9, 30, 66, 0.04);
+  background: #f4f6fa;
 }
 
 .form-input-title:focus {
-  background: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  background: #fff;
+  border-color: #0052cc;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
 }
 
 .drawer-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  border-top: 1px solid #e8ecf1;
+  padding-top: 20px;
+  margin-bottom: 24px;
 }
 
 .section-title {
-  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-medium);
+  color: #041b3c;
+  margin: 0 0 16px 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(115, 118, 133, 0.15);
-  padding-bottom: 6px;
+  letter-spacing: 0.03em;
 }
 
-/* Detail Section Grid */
 .section-grid {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  row-gap: 16px;
-  column-gap: 8px;
+  grid-template-columns: 100px 1fr;
+  row-gap: 14px;
   align-items: center;
-  font-size: 14px;
 }
 
 .grid-label {
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #737685;
 }
 
 .grid-value {
-  color: var(--text-dark);
+  font-size: 13px;
+  color: #041b3c;
 }
 
-.form-input-inline,
-.form-select-inline {
+.form-input-inline {
   width: 100%;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  font-size: 14px;
-  color: var(--text-dark);
-  transition: all var(--transition-fast);
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d7e2ff;
+  font-size: 13px;
+  color: #041b3c;
   outline: none;
+  background: #fff;
+  transition: all 0.15s ease;
 }
 
-.form-input-inline:hover,
-.form-select-inline:hover {
-  background: rgba(9, 30, 66, 0.04);
+.form-input-inline:focus {
+  border-color: #0052cc;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.08);
 }
 
-.form-input-inline:focus,
-.form-select-inline:focus {
-  background: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-}
-
-/* Status Select Badge wrapper */
 .select-badge-wrapper {
   position: relative;
   display: inline-block;
   width: 100%;
 }
 
-.select-badge-wrapper::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--badge-color, var(--primary));
-  pointer-events: none;
-  transition: background var(--transition-fast);
-}
-
 .form-select-inline {
-  padding-left: 28px;
-  font-weight: 600;
+  width: 100%;
+  padding: 6px 24px 6px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--badge-color, #0052cc);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--badge-color, #0052cc);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: all 0.15s ease;
 }
 
-/* Description Textarea */
+.form-select-inline:focus {
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.08);
+}
+
 .form-textarea-description {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(115, 118, 133, 0.2);
-  background: #fafbfc;
-  font-size: 14px;
-  color: var(--text-dark);
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d7e2ff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #4b5563;
   line-height: 1.6;
   outline: none;
   resize: vertical;
-  transition: all var(--transition-fast);
-}
-
-.form-textarea-description:hover {
-  background: #f4f5f7;
-  border-color: rgba(115, 118, 133, 0.35);
+  background: #fff;
+  transition: all 0.15s ease;
 }
 
 .form-textarea-description:focus {
-  background: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  border-color: #0052cc;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.08);
 }
 
-/* Actions in Drawer */
 .drawer-actions {
-  margin-top: 32px;
+  border-top: 1px solid #e8ecf1;
   padding-top: 24px;
-  border-top: 1px solid rgba(115, 118, 133, 0.15);
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
 }
 
 .btn-delete {
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(186, 26, 26, 0.2);
-  background: rgba(186, 26, 26, 0.05);
-  color: var(--error);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all var(--transition-fast);
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ef4444;
+  background: transparent;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .btn-delete:hover {
-  background: var(--error);
-  color: white;
-  border-color: var(--error);
-  box-shadow: 0 4px 12px rgba(186, 26, 26, 0.2);
+  background: #fef2f2;
 }
 
-.btn-delete .icon-trash {
-  transition: transform var(--transition-fast);
+.icon-trash {
+  width: 14px;
+  height: 14px;
 }
 
-.btn-delete:hover .icon-trash {
-  transform: scale(1.1);
+.main-actions {
+  display: flex;
+  gap: 10px;
 }
 
-/* Slide Transition classes */
+.main-actions .btn-cancel {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+.main-actions .btn-submit {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* Slide Transition */
 .slide-enter-from,
 .slide-leave-to {
   opacity: 0;
@@ -1065,7 +1045,7 @@ async function deleteDeal() {
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: opacity var(--transition-normal) ease;
+  transition: opacity 0.25s ease;
 }
 
 .slide-enter-from .drawer-content {
@@ -1078,6 +1058,6 @@ async function deleteDeal() {
 
 .slide-enter-active .drawer-content,
 .slide-leave-active .drawer-content {
-  transition: transform var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>
