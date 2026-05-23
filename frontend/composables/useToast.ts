@@ -3,9 +3,9 @@ import type { ToastItem } from '~/types/listing'
 
 let _toastId = 0
 
-export function useToast() {
-  const toasts = ref<ToastItem[]>([])
+const toasts = ref<ToastItem[]>([])
 
+export function useToast() {
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     const id = _toastId++
     toasts.value.push({ id, message, type })
