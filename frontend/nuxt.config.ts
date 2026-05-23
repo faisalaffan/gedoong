@@ -28,7 +28,7 @@ export default defineNuxtConfig({
     }
   },
 
-  modules: ['@nuxtjs/supabase'],
+  modules: ['@nuxtjs/supabase', '@pinia/nuxt'],
 
   supabase: {
     url: process.env.SUPABASE_URL || 'https://pkcjhfuelyexpsypqcct.supabase.co',
@@ -37,6 +37,12 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/global.css'],
+
+  vite: {
+    optimizeDeps: {
+      include: ['vuedraggable', 'dexie'],
+    },
+  },
 
   devServer: {
     port: 3000,
