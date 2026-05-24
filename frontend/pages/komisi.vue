@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useKomisiStore } from "~/stores/komisi";
+import { useKlienStore } from "~/stores/klien";
+import { useDealStore } from "~/stores/deal";
 import { useToast } from "~/composables/useToast";
 import ToastContainer from "~/components/listing/ToastContainer.vue";
 import KomisiStats from "~/components/komisi/KomisiStats.vue";
@@ -13,7 +15,14 @@ const store = useKomisiStore();
 const { toasts } = useToast();
 
 onMounted(async () => {
-  await store.fetchKomisiList();
+  const klienStore = useKlienStore();
+  const dealStore = useDealStore();
+  
+  await Promise.all([
+    store.fetchKomisiList(),
+    klienStore.fetchKliens(),
+    dealStore.fetchDeals(),
+  ]);
 });
 </script>
 

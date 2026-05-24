@@ -1,5 +1,6 @@
 <script setup lang="ts">
 defineProps<{
+  id: number
   image: string
   title: string
   price: string
@@ -13,7 +14,7 @@ defineProps<{
 </script>
 
 <template>
-  <article class="card">
+  <NuxtLink :to="'/listing/' + id" class="card">
     <div class="card-image">
       <img :src="image" :alt="title" loading="lazy" />
       <span v-if="isNew" class="badge-new">Baru!</span>
@@ -43,7 +44,7 @@ defineProps<{
         </span>
       </div>
     </div>
-  </article>
+  </NuxtLink>
 </template>
 
 <style scoped>
@@ -58,6 +59,7 @@ defineProps<{
   display: flex;
   flex-direction: column;
   position: relative;
+  text-decoration: none;
 }
 
 .card:hover {

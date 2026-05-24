@@ -24,25 +24,25 @@ const copyrightText = config.public.copyrightText;
       <div class="footer-links">
         <div class="footer-col">
           <h4>Properti</h4>
-          <a href="#">Rumah Dijual</a>
-          <a href="#">Rumah Disewakan</a>
-          <a href="#">Apartemen</a>
-          <a href="#">Kost</a>
-          <a href="#">Ruko</a>
+          <NuxtLink to="/?propertyType=jual">Rumah Dijual</NuxtLink>
+          <NuxtLink to="/?propertyType=sewa">Rumah Disewakan</NuxtLink>
+          <NuxtLink to="/?propertyType=jual">Apartemen</NuxtLink>
+          <NuxtLink to="/?propertyType=sewa">Kost</NuxtLink>
+          <NuxtLink to="/?propertyType=jual">Ruko</NuxtLink>
         </div>
         <div class="footer-col">
           <h4>Perusahaan</h4>
-          <a href="#">Tentang Kami</a>
-          <a href="#">Karir</a>
-          <a href="#">Kontak</a>
-          <a href="#">Blog</a>
+          <NuxtLink to="/tentang">Tentang Kami</NuxtLink>
+          <NuxtLink to="/karir">Karir</NuxtLink>
+          <NuxtLink to="/kontak">Kontak</NuxtLink>
+          <NuxtLink to="/blog">Blog</NuxtLink>
         </div>
         <div class="footer-col">
           <h4>Dukungan</h4>
-          <a href="#">FAQ</a>
-          <a href="#">Pusat Bantuan</a>
-          <a href="#">Syarat & Ketentuan</a>
-          <a href="#">Kebijakan Privasi</a>
+          <NuxtLink to="/kontak">FAQ</NuxtLink>
+          <NuxtLink to="/kontak">Pusat Bantuan</NuxtLink>
+          <NuxtLink to="/syarat">Syarat & Ketentuan</NuxtLink>
+          <NuxtLink to="/privasi">Kebijakan Privasi</NuxtLink>
         </div>
       </div>
     </div>

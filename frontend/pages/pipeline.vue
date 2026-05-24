@@ -76,6 +76,15 @@ onMounted(async () => {
   await store.fetchDeals();
   await klienStore.fetchKliens();
   await listingStore.fetchListings();
+
+  const route = useRoute();
+  if (route.query.new_deal_klien) {
+    const kId = parseInt(route.query.new_deal_klien as string, 10);
+    if (!isNaN(kId)) {
+      openModal();
+      newDeal.value.klien_id = kId;
+    }
+  }
 });
 
 async function onChange(event: any, stageLabel: string) {

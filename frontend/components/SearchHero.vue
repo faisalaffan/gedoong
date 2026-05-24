@@ -23,9 +23,9 @@ function triggerSearch() {
     <div class="hero-bg"></div>
     <div class="hero-content">
       <div class="trust-badges">
-        <span class="badge">🏆 5000+ Properti</span>
-        <span class="badge">🤝 2000+ Agen</span>
-        <span class="badge">📍 50+ Kota</span>
+        <span class="badge">🛡️ Listing Terverifikasi</span>
+        <span class="badge">⚡ Portal CRM Terpadu</span>
+        <span class="badge">🤝 Agen Profesional</span>
       </div>
       <h1 class="hero-title">Temukan Rumah Impian Anda</h1>
       <p class="hero-sub">
