@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { formatRupiah } from "~/utils/format";
+import { cacheSWR } from "~/utils/cache";
+
+definePageMeta({ layout: false });
 
 const route = useRoute();
 const router = useRouter();
@@ -10,25 +13,34 @@ const config = useRuntimeConfig();
 const id = route.params.id;
 const listing = ref<any>(null);
 const isLoading = ref(true);
+const isFromCache = ref(false);
+
+const DETAIL_TTL = 30 * 60 * 1000; // 30 minutes
 
 async function fetchListingDetail() {
   isLoading.value = true;
-  const supabase = useSupabaseClient();
-  const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("id", id)
-    .single();
 
-  if (error) {
-    console.error("Error fetching listing details:", error.message);
-  } else if (data) {
-    listing.value = data;
-    // Set dynamic page metadata
+  const cacheKey = `listing:detail:${id}`;
+  const result = await cacheSWR<any>(cacheKey, async () => {
+    const supabase = useSupabaseClient();
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, DETAIL_TTL);
+
+  if (result.data) {
+    listing.value = result.data;
+    isFromCache.value = result.fromCache;
     useHead({
-      title: data.properti || 'Detail Properti'
+      title: result.data.properti || "Detail Properti",
     });
   }
+
   isLoading.value = false;
 }
 
@@ -51,10 +63,48 @@ onMounted(() => {
   <div class="listing-detail-page">
     <div class="detail-container">
       
-      <!-- Loading State -->
-      <div v-if="isLoading" class="loading-wrap">
-        <div class="loading-spinner"></div>
-        <p>Memuat detail properti terbaik untuk Anda...</p>
+      <!-- Loading Skeleton -->
+      <div v-if="isLoading" class="detail-layout">
+        <div class="nav-breadcrumb">
+          <div class="skeleton-line skeleton-btn"></div>
+        </div>
+        <div class="main-split-grid">
+          <div class="content-side">
+            <div class="skeleton-box skeleton-hero"></div>
+            <div class="skeleton-card-block">
+              <div class="skeleton-line skeleton-title-lg"></div>
+              <div class="skeleton-line skeleton-subtitle"></div>
+            </div>
+            <div class="property-specs-grid">
+              <div v-for="n in 4" :key="n" class="skeleton-box skeleton-spec"></div>
+            </div>
+            <div class="skeleton-card-block">
+              <div class="skeleton-line skeleton-heading-sm"></div>
+              <div class="skeleton-line skeleton-text"></div>
+              <div class="skeleton-line skeleton-text"></div>
+              <div class="skeleton-line skeleton-text skeleton-text-short"></div>
+            </div>
+          </div>
+          <div class="sidebar-side">
+            <div class="skeleton-box skeleton-sidebar-card">
+              <div class="skeleton-line skeleton-label"></div>
+              <div class="skeleton-line skeleton-price-lg"></div>
+              <div class="skeleton-line skeleton-pill"></div>
+            </div>
+            <div class="skeleton-box skeleton-sidebar-card">
+              <div class="skeleton-line skeleton-heading-sm"></div>
+              <div class="skeleton-agent-row">
+                <div class="skeleton-box skeleton-avatar"></div>
+                <div>
+                  <div class="skeleton-line skeleton-text"></div>
+                  <div class="skeleton-line skeleton-subtitle"></div>
+                </div>
+              </div>
+              <div class="skeleton-box skeleton-btn-block"></div>
+              <div class="skeleton-box skeleton-btn-block"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Error / Not Found State -->
@@ -199,8 +249,62 @@ onMounted(() => {
   padding: 40px 24px 80px;
 }
 
-/* Loading Spinner */
-.loading-wrap,
+/* Skeleton Shimmer */
+.skeleton-box {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 12px;
+}
+
+.skeleton-card-block {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-btn { width: 140px; height: 14px; }
+.skeleton-hero { aspect-ratio: 16 / 9; width: 100%; }
+.skeleton-title-lg { width: 60%; height: 28px; }
+.skeleton-subtitle { width: 35%; height: 14px; }
+.skeleton-heading-sm { width: 40%; height: 18px; }
+.skeleton-text { width: 100%; height: 14px; }
+.skeleton-text-short { width: 60%; }
+.skeleton-label { width: 30%; height: 10px; }
+.skeleton-price-lg { width: 70%; height: 32px; }
+.skeleton-pill { width: 80px; height: 22px; border-radius: 6px; }
+.skeleton-spec { height: 72px; }
+.skeleton-sidebar-card {
+  min-height: 160px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+.skeleton-avatar { width: 44px; height: 44px; border-radius: 50%; }
+.skeleton-agent-row { display: flex; align-items: center; gap: 12px; }
+.skeleton-btn-block { height: 44px; border-radius: 8px; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Error State */
 .error-wrap {
   text-align: center;
   padding: 100px 24px;
@@ -210,25 +314,6 @@ onMounted(() => {
   box-shadow: 0 4px 20px rgba(0,0,0,0.01);
   max-width: 600px;
   margin: 60px auto;
-}
-
-.loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid #f1f5f9;
-  border-top-color: #0052cc;
-  border-radius: 50%;
-  animation: spin 1s infinite linear;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-wrap p {
-  color: #64748b;
-  font-size: 14.5px;
 }
 
 .error-icon {
