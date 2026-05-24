@@ -33,9 +33,9 @@ const copyrightText = config.public.copyrightText;
         <div class="footer-col">
           <h4>Perusahaan</h4>
           <NuxtLink to="/tentang">Tentang Kami</NuxtLink>
-          <NuxtLink to="/harga">Karir / Info</NuxtLink>
+          <NuxtLink to="/karir">Karir</NuxtLink>
           <NuxtLink to="/kontak">Kontak</NuxtLink>
-          <NuxtLink to="/tentang">Blog</NuxtLink>
+          <NuxtLink to="/blog">Blog</NuxtLink>
         </div>
         <div class="footer-col">
           <h4>Dukungan</h4>
