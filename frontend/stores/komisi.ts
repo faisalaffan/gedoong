@@ -41,7 +41,7 @@ export const useKomisiStore = defineStore('komisi', {
 
   actions: {
     async fetchKomisiList() {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { data, error } = await supabase
         .from('komisi')
         .select('*')
@@ -62,7 +62,7 @@ export const useKomisiStore = defineStore('komisi', {
     },
 
     async saveKomisi(payload: Partial<Komisi>, editingId: number | null) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
 
       if (editingId !== null) {
         const { error } = await supabase.from('komisi').update(payload).eq('id', editingId)
@@ -87,7 +87,7 @@ export const useKomisiStore = defineStore('komisi', {
 
     async deleteKomisi(komisi: Komisi) {
       if (!komisi.id) return
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('komisi').delete().eq('id', komisi.id)
       if (error) throw new Error(error.message)
 

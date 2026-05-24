@@ -33,7 +33,7 @@ export const useListingStore = defineStore('listing', {
 
   actions: {
     async fetchListings() {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { data, error } = await supabase
         .from('listings')
         .select('*')
@@ -54,7 +54,7 @@ export const useListingStore = defineStore('listing', {
     },
 
     async saveListing(payload: any, editingId: number | null) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
 
       if (editingId !== null) {
         const { error } = await supabase.from('listings').update(payload).eq('id', editingId)
@@ -79,7 +79,7 @@ export const useListingStore = defineStore('listing', {
 
     async deleteListing(listing: Listing) {
       if (!listing.id) return
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('listings').delete().eq('id', listing.id)
       if (error) throw new Error(error.message)
 

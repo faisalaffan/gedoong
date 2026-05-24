@@ -30,7 +30,7 @@ export const useKlienStore = defineStore('klien', {
 
   actions: {
     async fetchKliens() {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { data, error } = await supabase
         .from('kliens')
         .select('*')
@@ -51,7 +51,7 @@ export const useKlienStore = defineStore('klien', {
     },
 
     async saveKlien(payload: Partial<Klien>, editingId: number | null) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
 
       if (editingId !== null) {
         const { error } = await supabase.from('kliens').update(payload).eq('id', editingId)
@@ -76,7 +76,7 @@ export const useKlienStore = defineStore('klien', {
 
     async deleteKlien(klien: Klien) {
       if (!klien.id) return
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('kliens').delete().eq('id', klien.id)
       if (error) throw new Error(error.message)
 

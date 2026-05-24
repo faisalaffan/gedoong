@@ -11,7 +11,7 @@ export const useDealStore = defineStore('deal', {
 
   actions: {
     async fetchDeals() {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { data, error } = await supabase
         .from('deals')
         .select('*, klien:kliens(*), listing:listings(*)')
@@ -33,7 +33,7 @@ export const useDealStore = defineStore('deal', {
     },
 
     async saveNewDeal(payload: Partial<Deal>) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       
       const logEntry = {
         timestamp: new Date().toLocaleString('id-ID'),
@@ -70,7 +70,7 @@ export const useDealStore = defineStore('deal', {
     },
 
     async updateDealStageAndOrder(stageLabel: string, dealsList: Deal[]) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       
       const promises = dealsList.map((deal, index) => {
         if (!deal.id) return Promise.resolve()
@@ -104,7 +104,7 @@ export const useDealStore = defineStore('deal', {
     },
 
     async updateDeal(payload: Partial<Deal>, id: number) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
 
       // Find old deal to append log entries
       const oldDeal = this.deals.find(d => d.id === id)
@@ -161,7 +161,7 @@ export const useDealStore = defineStore('deal', {
     },
 
     async deleteDeal(id: number) {
-      const supabase = useSupabaseClient()
+      const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('deals').delete().eq('id', id)
 
       if (error) {

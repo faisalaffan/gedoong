@@ -13,12 +13,12 @@ const form = ref<Partial<Klien>>({
   properti: "",
   pipeline: "Prospek",
   catatan: "",
-  foto_url: ""
+  foto_url: "",
 });
 
 const errors = ref({
   nama: "",
-  kontak: ""
+  kontak: "",
 });
 
 const isDeleting = ref(false);
@@ -41,14 +41,14 @@ watch(
         pipeline: newVal.pipeline || "Prospek",
         catatan: newVal.catatan || "",
         foto_url: newVal.foto_url || "",
-        harga: newVal.harga || ""
+        harga: newVal.harga || "",
       };
       errors.value = { nama: "", kontak: "" };
       potoPreview.value = newVal.foto_url || null;
       potoFile.value = null;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function validateForm() {
@@ -101,24 +101,26 @@ async function handleSave() {
 
   isUploading.value = true;
   try {
-    const supabase = useSupabaseClient();
+    const supabase = useSupabaseClient<any>();
     let finalFotoUrl = form.value.foto_url || "";
 
     // Upload client photo if a new file is chosen
     if (potoFile.value) {
       const file = potoFile.value;
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "");
       const filePath = `klien-${Date.now()}-${cleanFileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('listings') // utilizing existing public listings bucket
+        .from("listings") // utilizing existing public listings bucket
         .upload(filePath, file);
 
       if (uploadError) {
         throw new Error("Gagal mengupload foto: " + uploadError.message);
       }
 
-      const { data: publicUrlData } = supabase.storage.from('listings').getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage
+        .from("listings")
+        .getPublicUrl(filePath);
       if (!publicUrlData?.publicUrl) {
         throw new Error("Gagal mendapatkan URL publik foto.");
       }
@@ -133,7 +135,7 @@ async function handleSave() {
       isEditing
         ? "Detail klien berhasil diperbarui!"
         : "Klien baru berhasil ditambahkan!",
-      "success"
+      "success",
     );
   } catch (err: any) {
     showToast(err.message || "Gagal menyimpan data klien", "error");
@@ -144,7 +146,11 @@ async function handleSave() {
 
 async function handleDelete() {
   if (!store.selectedKlien) return;
-  if (!confirm(`Apakah Anda yakin ingin menghapus klien "${store.selectedKlien.nama}"?`)) {
+  if (
+    !confirm(
+      `Apakah Anda yakin ingin menghapus klien "${store.selectedKlien.nama}"?`,
+    )
+  ) {
     return;
   }
 
@@ -180,7 +186,13 @@ function getWhatsAppUrl(kontak: string) {
     <!-- Header -->
     <div class="drawer-header">
       <h3 class="drawer-title">
-        {{ store.isDrawerEditing ? (store.editingKlienId !== null ? "Edit Klien" : "Tambah Klien Baru") : "Detail Klien" }}
+        {{
+          store.isDrawerEditing
+            ? store.editingKlienId !== null
+              ? "Edit Klien"
+              : "Tambah Klien Baru"
+            : "Detail Klien"
+        }}
       </h3>
       <button class="btn-close" @click="store.closeDrawer">&times;</button>
     </div>
@@ -194,14 +206,26 @@ function getWhatsAppUrl(kontak: string) {
       </div>
 
       <!-- 1. VIEW MODE -->
-      <div v-else-if="!store.isDrawerEditing && store.selectedKlien" class="view-mode">
+      <div
+        v-else-if="!store.isDrawerEditing && store.selectedKlien"
+        class="view-mode"
+      >
         <div class="profile-card">
           <div class="profile-avatar">
-            <img v-if="store.selectedKlien.foto_url" :src="store.selectedKlien.foto_url" class="profile-avatar-img" />
-            <span v-else>{{ store.selectedKlien.nama.charAt(0).toUpperCase() }}</span>
+            <img
+              v-if="store.selectedKlien.foto_url"
+              :src="store.selectedKlien.foto_url"
+              class="profile-avatar-img"
+            />
+            <span v-else>{{
+              store.selectedKlien.nama.charAt(0).toUpperCase()
+            }}</span>
           </div>
           <h4 class="profile-name">{{ store.selectedKlien.nama }}</h4>
-          <span class="profile-stage-badge" :class="`stage-${store.selectedKlien.pipeline.toLowerCase().replace(' ', '')}`">
+          <span
+            class="profile-stage-badge"
+            :class="`stage-${store.selectedKlien.pipeline.toLowerCase().replace(' ', '')}`"
+          >
             {{ store.selectedKlien.pipeline }}
           </span>
         </div>
@@ -210,9 +234,15 @@ function getWhatsAppUrl(kontak: string) {
           <div class="detail-group">
             <label class="detail-label">Kontak / No. Telepon</label>
             <div class="detail-value-row">
-              <span class="detail-value font-mono">{{ store.selectedKlien.kontak }}</span>
+              <span class="detail-value font-mono">{{
+                store.selectedKlien.kontak
+              }}</span>
               <div class="action-buttons">
-                <button class="btn-icon" title="Salin Kontak" @click="copyContact">
+                <button
+                  class="btn-icon"
+                  title="Salin Kontak"
+                  @click="copyContact"
+                >
                   📋
                 </button>
                 <a
@@ -245,7 +275,10 @@ function getWhatsAppUrl(kontak: string) {
             <label class="detail-label">Catatan Aktivitas</label>
             <div class="notes-container">
               <p class="notes-text">
-                {{ store.selectedKlien.catatan || "Tidak ada catatan untuk klien ini." }}
+                {{
+                  store.selectedKlien.catatan ||
+                  "Tidak ada catatan untuk klien ini."
+                }}
               </p>
             </div>
           </div>
@@ -260,7 +293,11 @@ function getWhatsAppUrl(kontak: string) {
             <label class="form-label">Foto Profil Klien</label>
             <div class="photo-uploader-container">
               <div class="photo-preview-box">
-                <img v-if="potoPreview" :src="potoPreview" class="photo-preview-img" />
+                <img
+                  v-if="potoPreview"
+                  :src="potoPreview"
+                  class="photo-preview-img"
+                />
                 <div v-else class="photo-placeholder-icon">👤</div>
               </div>
               <div class="photo-actions">
@@ -271,7 +308,11 @@ function getWhatsAppUrl(kontak: string) {
                   accept="image/*"
                   class="hidden-file-input"
                 />
-                <button type="button" class="btn-select-photo" @click="triggerFileInput">
+                <button
+                  type="button"
+                  class="btn-select-photo"
+                  @click="triggerFileInput"
+                >
                   Pilih Foto
                 </button>
                 <button
@@ -300,7 +341,9 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
-            <label for="kontak" class="form-label required">No. Telepon / WhatsApp</label>
+            <label for="kontak" class="form-label required"
+              >No. Telepon / WhatsApp</label
+            >
             <input
               type="text"
               id="kontak"
@@ -309,7 +352,9 @@ function getWhatsAppUrl(kontak: string) {
               :class="{ 'has-error': errors.kontak }"
               placeholder="Contoh: 081234567890"
             />
-            <span v-if="errors.kontak" class="error-msg">{{ errors.kontak }}</span>
+            <span v-if="errors.kontak" class="error-msg">{{
+              errors.kontak
+            }}</span>
           </div>
 
           <div class="form-group">
@@ -324,7 +369,9 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
-            <label for="harga" class="form-label">Nilai Deal / Budget Klien</label>
+            <label for="harga" class="form-label"
+              >Nilai Deal / Budget Klien</label
+            >
             <input
               type="text"
               id="harga"
@@ -346,7 +393,9 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
-            <label for="catatan" class="form-label">Catatan Aktivitas / Catatan Klien</label>
+            <label for="catatan" class="form-label"
+              >Catatan Aktivitas / Catatan Klien</label
+            >
             <textarea
               id="catatan"
               v-model="form.catatan"
@@ -377,10 +426,18 @@ function getWhatsAppUrl(kontak: string) {
         </button>
       </div>
       <div v-else class="footer-actions-edit">
-        <button class="btn-footer-save" @click="handleSave" :disabled="isUploading">
+        <button
+          class="btn-footer-save"
+          @click="handleSave"
+          :disabled="isUploading"
+        >
           Simpan Perubahan
         </button>
-        <button class="btn-footer-cancel" @click="store.cancelEditing" :disabled="isUploading">
+        <button
+          class="btn-footer-cancel"
+          @click="store.cancelEditing"
+          :disabled="isUploading"
+        >
           Batal
         </button>
       </div>
@@ -394,7 +451,7 @@ function getWhatsAppUrl(kontak: string) {
   flex-direction: column;
   height: 100%;
   background: #fff;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .drawer-header {
@@ -407,7 +464,7 @@ function getWhatsAppUrl(kontak: string) {
 }
 
 .drawer-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #041b3c;
@@ -470,7 +527,9 @@ function getWhatsAppUrl(kontak: string) {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* View Mode Styling */
@@ -484,7 +543,7 @@ function getWhatsAppUrl(kontak: string) {
   border: 1px solid #e8ecf1;
   border-radius: 12px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
 }
 
 .profile-avatar {
@@ -495,7 +554,7 @@ function getWhatsAppUrl(kontak: string) {
   color: #fff;
   font-size: 28px;
   font-weight: 700;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -516,7 +575,7 @@ function getWhatsAppUrl(kontak: string) {
   font-weight: 700;
   color: #041b3c;
   margin: 0 0 8px 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
 }
 
 .profile-stage-badge {
@@ -758,19 +817,23 @@ function getWhatsAppUrl(kontak: string) {
   background: #fef2f2;
 }
 
-.form-input, .form-select, .form-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   border: 1px solid #d7e2ff;
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: #041b3c;
   outline: none;
   background: #fff;
   transition: all 0.15s ease;
 }
 
-.form-input:focus, .form-select:focus, .form-textarea:focus {
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   border-color: #0052cc;
   box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.08);
 }
