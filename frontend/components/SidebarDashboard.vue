@@ -20,11 +20,6 @@ const appLogo = config.public.appLogo
 
 <template>
   <aside class="sidebar">
-    <div class="sidebar-brand">
-      <img :src="appLogo" :alt="appName + ' Logo'" class="brand-logo-img" />
-      <div class="brand-sub">CRM Agent Dashboard</div>
-    </div>
-
     <nav class="sidebar-nav">
       <NuxtLink
         v-for="item in menu"
@@ -56,30 +51,6 @@ const appLogo = config.public.appLogo
   flex-direction: column;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
-}
-
-.sidebar-brand {
-  padding: 24px 20px;
-  border-bottom: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.brand-logo-img {
-  height: 38px;
-  width: auto;
-  object-fit: contain;
-  align-self: flex-start;
-}
-
-.brand-sub {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
 }
 
 .sidebar-nav {
