@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useKlienStore } from "~/stores/klien";
+import { useDealStore } from "~/stores/deal";
 import { useToast } from "~/composables/useToast";
 import type { Klien } from "~/types/klien";
 
 const store = useKlienStore();
+const dealStore = useDealStore();
 const { showToast } = useToast();
 
 const form = ref<Partial<Klien>>({
@@ -14,6 +16,10 @@ const form = ref<Partial<Klien>>({
   pipeline: "Prospek",
   catatan: "",
   foto_url: "",
+  email: "",
+  tipe_klien: "Pembeli",
+  sumber_klien: "Referral",
+  catatan_aktivitas: []
 });
 
 const errors = ref({
@@ -42,6 +48,10 @@ watch(
         catatan: newVal.catatan || "",
         foto_url: newVal.foto_url || "",
         harga: newVal.harga || "",
+        email: newVal.email || "",
+        tipe_klien: newVal.tipe_klien || "Pembeli",
+        sumber_klien: newVal.sumber_klien || "Referral",
+        catatan_aktivitas: newVal.catatan_aktivitas || []
       };
       errors.value = { nama: "", kontak: "" };
       potoPreview.value = newVal.foto_url || null;
@@ -172,13 +182,69 @@ function copyContact() {
 }
 
 function getWhatsAppUrl(kontak: string) {
-  // Format phone number: remove non-digits, replace leading 0 with 62
   let cleanNumber = kontak.replace(/\D/g, "");
   if (cleanNumber.startsWith("0")) {
     cleanNumber = "62" + cleanNumber.substring(1);
   }
   return `https://wa.me/${cleanNumber}`;
 }
+
+// 1:many deals query
+const relatedDeals = computed(() => {
+  if (!store.selectedKlien?.id) return [];
+  return dealStore.deals.filter(d => d.klien_id === store.selectedKlien?.id);
+});
+
+// Activity Logging state & action
+const newActivityText = ref("");
+const isSavingActivity = ref(false);
+
+async function addActivityNote() {
+  if (!newActivityText.value.trim() || !store.selectedKlien) return;
+
+  isSavingActivity.value = true;
+  try {
+    const logEntry = {
+      timestamp: new Date().toLocaleString("id-ID"),
+      content: newActivityText.value.trim()
+    };
+
+    const updatedActivities = [...(store.selectedKlien.catatan_aktivitas || []), logEntry];
+
+    await store.saveKlien({
+      ...store.selectedKlien,
+      catatan_aktivitas: updatedActivities
+    }, store.selectedKlien.id || null);
+
+    newActivityText.value = "";
+    showToast("Catatan aktivitas berhasil ditambahkan!", "success");
+  } catch (err: any) {
+    showToast(err.message || "Gagal menyimpan catatan aktivitas", "error");
+  } finally {
+    isSavingActivity.value = false;
+  }
+}
+
+// Formatting helpers
+function formatRupiah(value: number | string | undefined) {
+  if (value === undefined || value === null) return "Rp 0";
+  const num = typeof value === "number" ? value : parseInt(value.replace(/[^0-9]/g, ""), 10);
+  if (isNaN(num)) return typeof value === "string" ? value : "Rp 0";
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(num);
+}
+
+const registrationDate = computed(() => {
+  if (!store.selectedKlien?.created_at) return "-";
+  return new Date(store.selectedKlien.created_at).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+});
 </script>
 
 <template>
@@ -205,7 +271,7 @@ function getWhatsAppUrl(kontak: string) {
         <span class="uploader-status-msg">Mengupload data & foto klien...</span>
       </div>
 
-      <!-- 1. VIEW MODE -->
+      <!-- 1. VIEW MODE (Read-only Detail) -->
       <div
         v-else-if="!store.isDrawerEditing && store.selectedKlien"
         class="view-mode"
@@ -230,56 +296,141 @@ function getWhatsAppUrl(kontak: string) {
           </span>
         </div>
 
+        <!-- CRM basic info -->
         <div class="details-section">
-          <div class="detail-group">
-            <label class="detail-label">Kontak / No. Telepon</label>
-            <div class="detail-value-row">
-              <span class="detail-value font-mono">{{
-                store.selectedKlien.kontak
-              }}</span>
-              <div class="action-buttons">
-                <button
-                  class="btn-icon"
-                  title="Salin Kontak"
-                  @click="copyContact"
-                >
-                  📋
-                </button>
-                <a
-                  :href="getWhatsAppUrl(store.selectedKlien.kontak)"
-                  target="_blank"
-                  class="btn-icon-wa"
-                  title="Hubungi via WhatsApp"
-                >
-                  💬 WA
-                </a>
+          <div class="crm-info-card">
+            <h4 class="section-title">Informasi Dasar Klien</h4>
+            
+            <div class="info-row">
+              <span class="info-label">No. Telepon</span>
+              <div class="info-value-action">
+                <span class="info-value font-mono">{{ store.selectedKlien.kontak }}</span>
+                <div class="badge-actions">
+                  <button class="btn-copy-mini" @click="copyContact" title="Salin nomor">Salin</button>
+                  <a 
+                    :href="getWhatsAppUrl(store.selectedKlien.kontak)" 
+                    target="_blank" 
+                    class="btn-wa-mini"
+                  >
+                    WA
+                  </a>
+                </div>
               </div>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">Email</span>
+              <span class="info-value">
+                <a 
+                  v-if="store.selectedKlien.email" 
+                  :href="`mailto:${store.selectedKlien.email}`" 
+                  class="email-link"
+                >
+                  {{ store.selectedKlien.email }}
+                </a>
+                <span v-else class="text-muted font-italic">Tidak ada email</span>
+              </span>
+            </div>
+
+            <div class="info-row-grid">
+              <div class="info-sub-row">
+                <span class="info-label">Tipe Klien</span>
+                <span 
+                  class="badge-tipe-lg"
+                  :class="'tipe-' + (store.selectedKlien.tipe_klien || 'Pembeli').toLowerCase()"
+                >
+                  {{ store.selectedKlien.tipe_klien || 'Pembeli' }}
+                </span>
+              </div>
+
+              <div class="info-sub-row">
+                <span class="info-label">Sumber Klien</span>
+                <span class="badge-sumber-lg">
+                  {{ store.selectedKlien.sumber_klien || 'Referral' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">Terdaftar Sejak</span>
+              <span class="info-value text-semibold">{{ registrationDate }}</span>
             </div>
           </div>
 
-          <div class="detail-group">
-            <label class="detail-label">Properti Terkait</label>
-            <span class="detail-value text-semibold">
-              {{ store.selectedKlien.properti || "Tidak ada properti terkait" }}
-            </span>
+          <!-- Deals Terkait (1:many list) -->
+          <div class="crm-info-card">
+            <div class="section-header-row">
+              <h4 class="section-title">Deals Terkait ({{ relatedDeals.length }})</h4>
+              <NuxtLink 
+                :to="'/pipeline?new_deal_klien=' + store.selectedKlien.id" 
+                class="btn-add-deal-link"
+              >
+                + Tambah Deal
+              </NuxtLink>
+            </div>
+
+            <div class="deals-list" v-if="relatedDeals.length > 0">
+              <div v-for="d in relatedDeals" :key="d.id" class="deal-item-card">
+                <div class="deal-item-top">
+                  <span class="deal-item-name">{{ d.name }}</span>
+                  <span class="deal-item-stage" :class="`stage-${d.stage.toLowerCase()}`">{{ d.stage }}</span>
+                </div>
+                <div class="deal-item-bottom">
+                  <span class="deal-item-property">🏠 {{ d.properti || '-' }}</span>
+                  <span class="deal-item-price">{{ formatRupiah(d.harga) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="deals-empty" v-else>
+              <p class="empty-text">Klien ini belum dikaitkan dengan transaksi deal apapun di pipeline.</p>
+            </div>
           </div>
 
-          <div class="detail-group" v-if="store.selectedKlien.harga">
-            <label class="detail-label">Nilai Deal / Harga</label>
-            <span class="detail-value text-semibold font-mono">
-              {{ store.selectedKlien.harga }}
-            </span>
-          </div>
+          <!-- Activity notes logger and logs list -->
+          <div class="crm-info-card">
+            <h4 class="section-title">Catatan Klien & Aktivitas</h4>
+            
+            <!-- Standard Client Description notes -->
+            <div class="general-desc-box" v-if="store.selectedKlien.catatan">
+              <p class="desc-text">{{ store.selectedKlien.catatan }}</p>
+            </div>
 
-          <div class="detail-group">
-            <label class="detail-label">Catatan Aktivitas</label>
-            <div class="notes-container">
-              <p class="notes-text">
-                {{
-                  store.selectedKlien.catatan ||
-                  "Tidak ada catatan untuk klien ini."
-                }}
-              </p>
+            <!-- Notes entry log input form -->
+            <div class="activity-input-form">
+              <label class="info-label">Tambah Catatan Baru</label>
+              <textarea 
+                v-model="newActivityText" 
+                placeholder="Tulis interaksi terbaru, progress survei, atau catatan meeting..." 
+                rows="3" 
+                class="activity-textarea"
+              ></textarea>
+              <button 
+                type="button" 
+                class="btn-save-note" 
+                @click="addActivityNote" 
+                :disabled="isSavingActivity || !newActivityText.trim()"
+              >
+                {{ isSavingActivity ? 'Menyimpan...' : 'Simpan Catatan' }}
+              </button>
+            </div>
+
+            <!-- Catatan aktivitas timeline -->
+            <div class="activity-timeline-section" v-if="store.selectedKlien.catatan_aktivitas && store.selectedKlien.catatan_aktivitas.length > 0">
+              <label class="info-label-timeline">Timeline Interaksi Klien</label>
+              <div class="timeline-box">
+                <div 
+                  v-for="(log, idx) in [...store.selectedKlien.catatan_aktivitas].reverse()" 
+                  :key="idx" 
+                  class="timeline-row"
+                >
+                  <div class="timeline-row-dot"></div>
+                  <div class="timeline-row-content">
+                    <p class="timeline-row-text">{{ log.content }}</p>
+                    <span class="timeline-row-time">{{ log.timestamp }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -341,9 +492,7 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
-            <label for="kontak" class="form-label required"
-              >No. Telepon / WhatsApp</label
-            >
+            <label for="kontak" class="form-label required">No. Telepon / WhatsApp</label>
             <input
               type="text"
               id="kontak"
@@ -352,32 +501,50 @@ function getWhatsAppUrl(kontak: string) {
               :class="{ 'has-error': errors.kontak }"
               placeholder="Contoh: 081234567890"
             />
-            <span v-if="errors.kontak" class="error-msg">{{
-              errors.kontak
-            }}</span>
+            <span v-if="errors.kontak" class="error-msg">{{ errors.kontak }}</span>
           </div>
 
           <div class="form-group">
-            <label for="properti" class="form-label">Properti Terkait</label>
+            <label for="email" class="form-label">Alamat Email</label>
+            <input
+              type="email"
+              id="email"
+              v-model="form.email"
+              class="form-input"
+              placeholder="Contoh: john@example.com"
+            />
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-group">
+              <label for="tipe-klien" class="form-label">Tipe Klien</label>
+              <select id="tipe-klien" v-model="form.tipe_klien" class="form-select">
+                <option value="Pembeli">Pembeli</option>
+                <option value="Penyewa">Penyewa</option>
+                <option value="Investor">Investor</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sumber-klien" class="form-label">Sumber Lead Klien</label>
+              <select id="sumber-klien" v-model="form.sumber_klien" class="form-select">
+                <option value="Referral">Referral</option>
+                <option value="OLX">OLX</option>
+                <option value="Website">Website</option>
+                <option value="Cold Call">Cold Call</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="properti" class="form-label">Properti Terkait (MVP Fallback)</label>
             <input
               type="text"
               id="properti"
               v-model="form.properti"
               class="form-input"
               placeholder="Contoh: Rumah Minimalis Jaksel"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="harga" class="form-label"
-              >Nilai Deal / Budget Klien</label
-            >
-            <input
-              type="text"
-              id="harga"
-              v-model="form.harga"
-              class="form-input"
-              placeholder="Contoh: Rp 850jt"
             />
           </div>
 
@@ -393,15 +560,13 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
-            <label for="catatan" class="form-label"
-              >Catatan Aktivitas / Catatan Klien</label
-            >
+            <label for="catatan" class="form-label">Catatan Profil Klien</label>
             <textarea
               id="catatan"
               v-model="form.catatan"
-              rows="5"
+              rows="4"
               class="form-textarea"
-              placeholder="Tambahkan detail kebutuhan properti, catatan follow-up, dll."
+              placeholder="Tambahkan kriteria properti khusus, detail budget, dll..."
             ></textarea>
           </div>
         </form>
@@ -415,7 +580,7 @@ function getWhatsAppUrl(kontak: string) {
           class="btn-footer-edit"
           @click="store.startEditing(store.selectedKlien!)"
         >
-          Edit Klien
+          Edit Detail Klien
         </button>
         <button
           class="btn-footer-delete"
@@ -607,9 +772,15 @@ function getWhatsAppUrl(kontak: string) {
 }
 
 .stage-closing {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.1);
+}
+
+.stage-deal {
   background: #ecfdf5;
-  color: #059669;
-  border: 1px solid rgba(5, 150, 105, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.1);
 }
 
 .details-section {
@@ -618,100 +789,416 @@ function getWhatsAppUrl(kontak: string) {
   gap: 20px;
 }
 
-.detail-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Premium Info Card */
+.crm-info-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.detail-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #8b8e99;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.detail-value-row {
+.section-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8fafc;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #e8ecf1;
+  margin-bottom: 14px;
 }
 
-.detail-value {
+.section-title {
+  font-family: "Outfit", sans-serif;
   font-size: 13.5px;
-  color: #041b3c;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed #f1f5f9;
+  padding-bottom: 10px;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.info-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed #f1f5f9;
+  padding-bottom: 10px;
+}
+
+.info-sub-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.info-value {
+  font-size: 13.5px;
+  color: #1e293b;
+}
+
+.info-value-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-copy-mini {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-copy-mini:hover {
+  background: #e2e8f0;
+}
+
+.btn-wa-mini {
+  background: #10b981;
+  color: #fff;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-decoration: none;
+  box-shadow: 0 1.5px 3px rgba(16, 185, 129, 0.15);
+  transition: all 0.15s ease;
+}
+
+.btn-wa-mini:hover {
+  background: #059669;
+}
+
+.email-link {
+  color: #0052cc;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.email-link:hover {
+  color: #003d9b;
+}
+
+.badge-tipe-lg {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-tipe-lg.tipe-pembeli {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.badge-tipe-lg.tipe-penyewa {
+  background: #fdf2f8;
+  color: #db2777;
+}
+
+.badge-tipe-lg.tipe-investor {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.badge-sumber-lg {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #374151;
+  background: #f3f4f6;
+  padding: 3px 10px;
+  border-radius: 6px;
 }
 
 .font-mono {
   font-family: monospace;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
 }
 
 .text-semibold {
   font-weight: 600;
-  color: #041b3c;
-  font-size: 13.5px;
 }
 
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-icon {
-  background: #fff;
-  border: 1px solid #d7e2ff;
+.btn-add-deal-link {
+  background: #0052cc;
+  color: #fff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
   border-radius: 6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 82, 204, 0.1);
   transition: all 0.15s ease;
 }
 
-.btn-icon:hover {
-  background: #f0f4ff;
+.btn-add-deal-link:hover {
+  background: #003d9b;
+}
+
+/* Associated Deals List */
+.deals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deal-item-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fafcff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deal-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deal-item-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.deal-item-stage {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.deal-item-stage.stage-prospek {
+  background: #e8f0fe;
+  color: #0052cc;
+}
+
+.deal-item-stage.stage-followup {
+  background: #fff7ed;
+  color: #e07b00;
+}
+
+.deal-item-stage.stage-nego {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.deal-item-stage.stage-closing {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.deal-item-stage.stage-deal {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+
+.deal-item-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.deal-item-property {
+  font-weight: 500;
+}
+
+.deal-item-price {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.deals-empty {
+  padding: 16px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.empty-text {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.general-desc-box {
+  background: #fafafb;
+  border-left: 3px solid #cbd5e1;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.desc-text {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Activity Logger Form */
+.activity-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 14px;
+}
+
+.activity-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-family: inherit;
+  font-size: 12px;
+  color: #334155;
+  outline: none;
+  resize: vertical;
+}
+
+.activity-textarea:focus {
   border-color: #0052cc;
 }
 
-.btn-icon-wa {
-  background: #25d366;
+.btn-save-note {
+  align-self: flex-end;
+  background: #0f172a;
+  color: white;
   border: none;
-  border-radius: 6px;
-  color: #fff;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 11px;
   font-weight: 700;
-  text-decoration: none;
+  border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
   transition: all 0.15s ease;
 }
 
-.btn-icon-wa:hover {
-  background: #128c7e;
-  box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
+.btn-save-note:hover:not(:disabled) {
+  background: #1e293b;
 }
 
-.notes-container {
-  background: #fafafb;
-  border: 1px dashed #d7e2ff;
-  border-radius: 8px;
-  padding: 12px 16px;
+.btn-save-note:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
 }
 
-.notes-text {
+/* Activity Logs Timeline */
+.activity-timeline-section {
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+}
+
+.info-label-timeline {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.timeline-box {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 16px;
+}
+
+.timeline-box::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.timeline-row {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.timeline-row:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-row-dot {
+  position: absolute;
+  left: -17px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0052cc;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 1.5px #cbd5e1;
+}
+
+.timeline-row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-row-text {
+  font-size: 12px;
+  color: #334155;
   margin: 0;
-  font-size: 13px;
-  color: #4b5563;
-  line-height: 1.6;
-  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.timeline-row-time {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
 /* Edit Mode Styling */
@@ -725,6 +1212,12 @@ function getWhatsAppUrl(kontak: string) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.form-group-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .form-label {

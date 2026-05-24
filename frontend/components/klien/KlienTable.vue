@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { ref, computed } from "vue";
 import { useKlienStore } from "~/stores/klien";
 
 const store = useKlienStore();
+
+const sortBy = ref<"nama" | "pipeline" | "created_at">("nama");
+const sortOrder = ref<"asc" | "desc">("asc");
 
 function pipelineClass(stage: string) {
   if (stage === "Prospek") return "pipe-prospek";
@@ -10,6 +14,76 @@ function pipelineClass(stage: string) {
   if (stage === "Closing") return "pipe-closing";
   if (stage === "Deal") return "pipe-deal";
   return "";
+}
+
+function toggleSort(field: "nama" | "pipeline" | "created_at") {
+  if (sortBy.value === field) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = field;
+    sortOrder.value = "asc";
+  }
+}
+
+const sortedFilteredKliens = computed(() => {
+  const list = [...store.filteredKliens];
+
+  list.sort((a, b) => {
+    let valA = "";
+    let valB = "";
+
+    if (sortBy.value === "nama") {
+      valA = a.nama.toLowerCase();
+      valB = b.nama.toLowerCase();
+    } else if (sortBy.value === "pipeline") {
+      valA = a.pipeline.toLowerCase();
+      valB = b.pipeline.toLowerCase();
+    } else if (sortBy.value === "created_at") {
+      valA = a.created_at || "";
+      valB = b.created_at || "";
+    }
+
+    if (valA < valB) return sortOrder.value === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder.value === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  return list;
+});
+
+function exportToCSV() {
+  const clients = sortedFilteredKliens.value;
+  if (clients.length === 0) {
+    alert("Tidak ada data klien untuk diekspor!");
+    return;
+  }
+
+  const headers = ["Nama", "Telepon/WA", "Email", "Tipe Klien", "Sumber Klien", "Properti Terkait", "Pipeline Stage", "Tanggal Terdaftar"];
+  const rows = clients.map((k) => [
+    k.nama,
+    k.kontak || "",
+    k.email || "",
+    k.tipe_klien || "Pembeli",
+    k.sumber_klien || "Referral",
+    k.properti || "",
+    k.pipeline || "Prospek",
+    k.created_at ? new Date(k.created_at).toLocaleDateString("id-ID") : "",
+  ]);
+
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((r) => r.map((val) => `"${val.replace(/"/g, '""')}"`).join(",")),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Direktori_Klien_Gedoong_${new Date().toISOString().substring(0, 10)}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 </script>
 
@@ -24,9 +98,14 @@ function pipelineClass(stage: string) {
 
     <!-- Top Toolbar Control Area -->
     <div class="toolbar">
-      <button class="btn-add" @click="store.openCreateDrawer">
-        + Tambah Klien
-      </button>
+      <div class="toolbar-left">
+        <button class="btn-add" @click="store.openCreateDrawer">
+          + Tambah Klien
+        </button>
+        <button class="btn-export" @click="exportToCSV">
+          📥 Ekspor CSV
+        </button>
+      </div>
       <div class="toolbar-right">
         <input
           type="text"
@@ -50,15 +129,26 @@ function pipelineClass(stage: string) {
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nama</th>
-            <th>Kontak</th>
+            <th @click="toggleSort('nama')" class="sortable-header">
+              Nama
+              <span class="sort-icon" v-if="sortBy === 'nama'">
+                {{ sortOrder === "asc" ? "▲" : "▼" }}
+              </span>
+            </th>
+            <th>Kontak & Email</th>
+            <th>Info CRM</th>
             <th>Properti Terkait</th>
-            <th>Pipeline</th>
+            <th @click="toggleSort('pipeline')" class="sortable-header">
+              Pipeline
+              <span class="sort-icon" v-if="sortBy === 'pipeline'">
+                {{ sortOrder === "asc" ? "▲" : "▼" }}
+              </span>
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="k in store.filteredKliens"
+            v-for="k in sortedFilteredKliens"
             :key="k.id"
             @click="store.openDrawer(k)"
             class="table-row-clickable"
@@ -89,7 +179,24 @@ function pipelineClass(stage: string) {
               </div>
             </td>
             <td class="cell-kontak">
-              <span class="kontak-text">{{ k.kontak || "-" }}</span>
+              <div class="contact-email-wrapper">
+                <span class="kontak-text">{{ k.kontak || "-" }}</span>
+                <span class="email-text" v-if="k.email">{{ k.email }}</span>
+                <span class="email-text-empty" v-else>-</span>
+              </div>
+            </td>
+            <td>
+              <div class="crm-badges-wrapper">
+                <span 
+                  class="badge-tipe" 
+                  :class="'tipe-' + (k.tipe_klien || 'Pembeli').toLowerCase()"
+                >
+                  {{ k.tipe_klien || 'Pembeli' }}
+                </span>
+                <span class="badge-sumber">
+                  {{ k.sumber_klien || 'Referral' }}
+                </span>
+              </div>
             </td>
             <td>
               <span class="properti-text">{{ k.properti || "-" }}</span>
@@ -101,7 +208,7 @@ function pipelineClass(stage: string) {
             </td>
           </tr>
           <tr v-if="store.filteredKliens.length === 0">
-            <td colspan="4" class="no-data">
+            <td colspan="5" class="no-data">
               Tidak ada klien yang ditemukan di Supabase.
             </td>
           </tr>
@@ -141,6 +248,12 @@ function pipelineClass(stage: string) {
   margin-bottom: 20px;
 }
 
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .btn-add {
   padding: 10px 20px;
   border: none;
@@ -159,6 +272,24 @@ function pipelineClass(stage: string) {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(0, 82, 204, 0.25);
   background: linear-gradient(135deg, #0040a1 0%, #003080 100%);
+}
+
+.btn-export {
+  padding: 10px 18px;
+  border: 1px solid #d7e2ff;
+  border-radius: 8px;
+  background: #fff;
+  color: #0052cc;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-export:hover {
+  background: #f0f4ff;
+  border-color: #0052cc;
 }
 
 .toolbar-right {
@@ -232,6 +363,24 @@ function pipelineClass(stage: string) {
   background: #fafafb;
 }
 
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.sortable-header:hover {
+  background-color: #f1f3f6;
+  color: #041b3c;
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 9px;
+  color: #0052cc;
+}
+
 .data-table td {
   padding: 16px 18px;
   border-bottom: 1px solid #f2f5f9;
@@ -294,10 +443,75 @@ function pipelineClass(stage: string) {
   margin-top: 2px;
 }
 
+.contact-email-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .cell-kontak {
-  font-family: monospace;
+  font-family: var(--font-display), sans-serif;
   font-size: 13px;
   color: #5a5e6f;
+}
+
+.kontak-text {
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.email-text {
+  font-size: 11.5px;
+  color: #0052cc;
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.email-text-empty {
+  font-size: 11.5px;
+  color: #b5b7c0;
+}
+
+.crm-badges-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.badge-tipe {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.tipe-pembeli {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tipe-penyewa {
+  background: #fdf2f8;
+  color: #db2777;
+}
+
+.tipe-investor {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.badge-sumber {
+  font-size: 9px;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 1.5px 6px;
+  border-radius: 4px;
 }
 
 .properti-text {
@@ -333,9 +547,9 @@ function pipelineClass(stage: string) {
 }
 
 .pipe-closing {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid rgba(5, 150, 105, 0.1);
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.1);
 }
 
 .pipe-deal {

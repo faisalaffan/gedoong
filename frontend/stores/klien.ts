@@ -20,7 +20,10 @@ export const useKlienStore = defineStore('klien', {
           item.nama.toLowerCase().includes(q) ||
           (item.kontak && item.kontak.toLowerCase().includes(q)) ||
           (item.properti && item.properti.toLowerCase().includes(q)) ||
-          (item.catatan && item.catatan.toLowerCase().includes(q))
+          (item.catatan && item.catatan.toLowerCase().includes(q)) ||
+          (item.email && item.email.toLowerCase().includes(q)) ||
+          (item.sumber_klien && item.sumber_klien.toLowerCase().includes(q)) ||
+          (item.tipe_klien && item.tipe_klien.toLowerCase().includes(q))
         
         const matchesPipeline = !state.filterPipeline || item.pipeline === state.filterPipeline
         return matchesSearch && matchesPipeline
@@ -41,11 +44,14 @@ export const useKlienStore = defineStore('klien', {
         return
       }
       if (data) {
-        this.kliens = data as Klien[]
+        this.kliens = (data as Klien[]).map(item => ({
+          ...item,
+          catatan_aktivitas: item.catatan_aktivitas || []
+        }))
         // Sync selectedKlien if drawer is open
         if (this.selectedKlien && this.isDrawerOpen) {
-          const updated = data.find((item: any) => item.id === this.selectedKlien?.id)
-          if (updated) this.selectedKlien = updated as Klien
+          const updated = this.kliens.find((item) => item.id === this.selectedKlien?.id)
+          if (updated) this.selectedKlien = updated
         }
       }
     },
@@ -53,11 +59,26 @@ export const useKlienStore = defineStore('klien', {
     async saveKlien(payload: Partial<Klien>, editingId: number | null) {
       const supabase = useSupabaseClient<any>()
 
+      const rawPayload = {
+        nama: payload.nama || '',
+        kontak: payload.kontak || '',
+        properti: payload.properti || '',
+        pipeline: payload.pipeline || 'Prospek',
+        catatan: payload.catatan || '',
+        foto_url: payload.foto_url || '',
+        harga: payload.harga || '',
+        order: payload.order || 0,
+        email: payload.email || '',
+        sumber_klien: payload.sumber_klien || 'Referral',
+        tipe_klien: payload.tipe_klien || 'Pembeli',
+        catatan_aktivitas: payload.catatan_aktivitas || []
+      }
+
       if (editingId !== null) {
-        const { error } = await supabase.from('kliens').update(payload).eq('id', editingId)
+        const { error } = await supabase.from('kliens').update(rawPayload).eq('id', editingId)
         if (error) throw new Error('Gagal mengupdate klien: ' + error.message)
       } else {
-        const { error } = await supabase.from('kliens').insert([payload])
+        const { error } = await supabase.from('kliens').insert([rawPayload])
         if (error) throw new Error('Gagal menambahkan klien: ' + error.message)
       }
 
@@ -85,7 +106,10 @@ export const useKlienStore = defineStore('klien', {
     },
 
     openDrawer(klien: Klien) {
-      this.selectedKlien = klien
+      this.selectedKlien = {
+        ...klien,
+        catatan_aktivitas: klien.catatan_aktivitas || []
+      }
       this.isDrawerOpen = true
       this.isDrawerEditing = false
     },
@@ -98,7 +122,20 @@ export const useKlienStore = defineStore('klien', {
 
     openCreateDrawer() {
       this.editingKlienId = null
-      this.selectedKlien = { nama: '', kontak: '', properti: '', pipeline: 'Prospek', catatan: '', foto_url: '', harga: '', order: 0 } as Klien
+      this.selectedKlien = {
+        nama: '',
+        kontak: '',
+        properti: '',
+        pipeline: 'Prospek',
+        catatan: '',
+        foto_url: '',
+        harga: '',
+        order: 0,
+        email: '',
+        sumber_klien: 'Referral',
+        tipe_klien: 'Pembeli',
+        catatan_aktivitas: []
+      } as Klien
       this.isDrawerOpen = true
       this.isDrawerEditing = true
     },
