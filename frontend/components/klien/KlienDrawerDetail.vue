@@ -40,7 +40,8 @@ watch(
         properti: newVal.properti || "",
         pipeline: newVal.pipeline || "Prospek",
         catatan: newVal.catatan || "",
-        foto_url: newVal.foto_url || ""
+        foto_url: newVal.foto_url || "",
+        harga: newVal.harga || ""
       };
       errors.value = { nama: "", kontak: "" };
       potoPreview.value = newVal.foto_url || null;
@@ -233,6 +234,13 @@ function getWhatsAppUrl(kontak: string) {
             </span>
           </div>
 
+          <div class="detail-group" v-if="store.selectedKlien.harga">
+            <label class="detail-label">Nilai Deal / Harga</label>
+            <span class="detail-value text-semibold font-mono">
+              {{ store.selectedKlien.harga }}
+            </span>
+          </div>
+
           <div class="detail-group">
             <label class="detail-label">Catatan Aktivitas</label>
             <div class="notes-container">
@@ -316,12 +324,24 @@ function getWhatsAppUrl(kontak: string) {
           </div>
 
           <div class="form-group">
+            <label for="harga" class="form-label">Nilai Deal / Budget Klien</label>
+            <input
+              type="text"
+              id="harga"
+              v-model="form.harga"
+              class="form-input"
+              placeholder="Contoh: Rp 850jt"
+            />
+          </div>
+
+          <div class="form-group">
             <label for="pipeline" class="form-label">Pipeline Stage</label>
             <select id="pipeline" v-model="form.pipeline" class="form-select">
               <option value="Prospek">Prospek</option>
               <option value="Follow-up">Follow-up</option>
               <option value="Nego">Nego</option>
               <option value="Closing">Closing</option>
+              <option value="Deal">Deal</option>
             </select>
           </div>
 

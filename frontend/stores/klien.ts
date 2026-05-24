@@ -98,7 +98,7 @@ export const useKlienStore = defineStore('klien', {
 
     openCreateDrawer() {
       this.editingKlienId = null
-      this.selectedKlien = { nama: '', kontak: '', properti: '', pipeline: 'Prospek', catatan: '', foto_url: '' } as Klien
+      this.selectedKlien = { nama: '', kontak: '', properti: '', pipeline: 'Prospek', catatan: '', foto_url: '', harga: '', order: 0 } as Klien
       this.isDrawerOpen = true
       this.isDrawerEditing = true
     },

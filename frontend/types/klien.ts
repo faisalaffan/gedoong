@@ -1,4 +1,4 @@
-export type PipelineStage = 'Prospek' | 'Follow-up' | 'Nego' | 'Closing'
+export type PipelineStage = 'Prospek' | 'Follow-up' | 'Nego' | 'Closing' | 'Deal'
 
 export interface Klien {
   id?: number
@@ -9,4 +9,6 @@ export interface Klien {
   pipeline: PipelineStage
   catatan?: string
   foto_url?: string
+  harga?: string
+  order?: number
 }

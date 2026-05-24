@@ -1,10 +1,4 @@
-export interface Deal {
-  id?: number
-  created_at?: string
-  name: string
-  properti: string
-  harga: string
-  stage: 'Prospek' | 'Follow-up' | 'Nego' | 'Closing' | 'Deal'
-  order: number
-  deskripsi?: string
-}
+import type { Klien } from './klien'
+
+// Deal is now a type alias of Klien for unified database schema support
+export type Deal = Klien

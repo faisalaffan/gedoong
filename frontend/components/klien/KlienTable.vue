@@ -8,6 +8,7 @@ function pipelineClass(stage: string) {
   if (stage === "Follow-up") return "pipe-followup";
   if (stage === "Nego") return "pipe-nego";
   if (stage === "Closing") return "pipe-closing";
+  if (stage === "Deal") return "pipe-deal";
   return "";
 }
 </script>
@@ -39,6 +40,7 @@ function pipelineClass(stage: string) {
           <option value="Follow-up">Follow-up</option>
           <option value="Nego">Nego</option>
           <option value="Closing">Closing</option>
+          <option value="Deal">Deal</option>
         </select>
       </div>
     </div>
@@ -63,14 +65,25 @@ function pipelineClass(stage: string) {
           >
             <td class="cell-nama">
               <div class="klien-cell-content">
-                <img v-if="k.foto_url" :src="k.foto_url" class="klien-avatar-img" />
+                <img
+                  v-if="k.foto_url"
+                  :src="k.foto_url"
+                  class="klien-avatar-img"
+                />
                 <div v-else class="klien-avatar">
                   {{ k.nama.charAt(0).toUpperCase() }}
                 </div>
                 <div class="klien-info">
                   <span class="klien-name">{{ k.nama }}</span>
                   <span class="klien-created" v-if="k.created_at">
-                    Terdaftar: {{ new Date(k.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                    Terdaftar:
+                    {{
+                      new Date(k.created_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    }}
                   </span>
                 </div>
               </div>
@@ -104,7 +117,7 @@ function pipelineClass(stage: string) {
 }
 
 .page-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 24px;
   font-weight: 700;
   color: #041b3c;
@@ -136,7 +149,7 @@ function pipelineClass(stage: string) {
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 82, 204, 0.15);
   transition: all 0.2s ease;
@@ -160,7 +173,7 @@ function pipelineClass(stage: string) {
   border: 1px solid #d7e2ff;
   border-radius: 8px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: #041b3c;
   outline: none;
   width: 260px;
@@ -180,7 +193,7 @@ function pipelineClass(stage: string) {
   border: 1px solid #d7e2ff;
   border-radius: 8px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: #041b3c;
   outline: none;
   background: #fff;
@@ -252,7 +265,7 @@ function pipelineClass(stage: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .klien-avatar-img {
@@ -261,7 +274,7 @@ function pipelineClass(stage: string) {
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #d7e2ff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .klien-info {
@@ -323,6 +336,12 @@ function pipelineClass(stage: string) {
   background: #ecfdf5;
   color: #059669;
   border: 1px solid rgba(5, 150, 105, 0.1);
+}
+
+.pipe-deal {
+  background: #ecfdf5;
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.1);
 }
 
 .no-data {
