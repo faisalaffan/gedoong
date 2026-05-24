@@ -13,27 +13,21 @@ export const useDealStore = defineStore('deal', {
     async fetchDeals() {
       const supabase = useSupabaseClient()
       const { data, error } = await supabase
-        .from('kliens') // Fetch directly from unified 'kliens' table!
-        .select('*')
+        .from('deals')
+        .select('*, klien:kliens(*), listing:listings(*)')
         .order('order', { ascending: true })
 
       if (error) {
-        console.error('Error fetching deals from kliens:', error.message)
+        console.error('Error fetching deals:', error.message)
         return
       }
       if (data) {
-        // Map Kliens schema to the Deal model expected by pipeline.vue template
-        this.deals = data.map((item: any) => ({
-          ...item,
-          name: item.nama, // pipeline.vue expects .name
-          stage: item.pipeline, // pipeline.vue expects .stage
-          deskripsi: item.catatan || '' // pipeline.vue expects .deskripsi
-        })) as Deal[]
+        this.deals = data as Deal[]
         
         // Sync selectedDeal if drawer is open
         if (this.selectedDeal && this.isDrawerOpen) {
-          const updated = this.deals.find((item: any) => item.id === this.selectedDeal?.id)
-          if (updated) this.selectedDeal = updated as Deal
+          const updated = this.deals.find((item) => item.id === this.selectedDeal?.id)
+          if (updated) this.selectedDeal = { ...updated }
         }
       }
     },
@@ -41,21 +35,35 @@ export const useDealStore = defineStore('deal', {
     async saveNewDeal(payload: Partial<Deal>) {
       const supabase = useSupabaseClient()
       
-      // Map properties to fit the Kliens table column schema
-      const mappedPayload = {
-        nama: payload.name || payload.nama || '',
-        kontak: '0812-3456-7890', // Default fallback contact number
-        properti: payload.properti || '',
-        harga: payload.harga || '',
-        pipeline: payload.stage || payload.pipeline || 'Prospek',
-        order: payload.order || 0,
-        catatan: payload.deskripsi || payload.catatan || ''
+      const logEntry = {
+        timestamp: new Date().toLocaleString('id-ID'),
+        action: 'Deal berhasil dibuat'
       }
 
-      const { error } = await supabase.from('kliens').insert([mappedPayload])
+      const rawPayload = {
+        klien_id: payload.klien_id,
+        listing_id: payload.listing_id || null,
+        name: payload.name || '',
+        properti: payload.properti || '',
+        harga: payload.harga || 0,
+        stage: payload.stage || 'Prospek',
+        order: payload.order || 0,
+        deskripsi: payload.deskripsi || '',
+        tipe_properti: payload.tipe_properti || 'Rumah',
+        tipe_transaksi: payload.tipe_transaksi || 'Jual',
+        tanggal_masuk: payload.tanggal_masuk || new Date().toISOString().split('T')[0],
+        target_closing: payload.target_closing || null,
+        sumber_lead: payload.sumber_lead || 'Referral',
+        komisi_persen: payload.komisi_persen || 2.5,
+        prioritas: payload.prioritas || 'Medium',
+        tags: payload.tags || [],
+        activity_log: [logEntry]
+      }
+
+      const { error } = await supabase.from('deals').insert([rawPayload])
 
       if (error) {
-        throw new Error('Gagal mencatat deal baru ke klien: ' + error.message)
+        throw new Error('Gagal mencatat deal baru: ' + error.message)
       }
       await this.fetchDeals()
       this.closeModal()
@@ -64,21 +72,31 @@ export const useDealStore = defineStore('deal', {
     async updateDealStageAndOrder(stageLabel: string, dealsList: Deal[]) {
       const supabase = useSupabaseClient()
       
-      // Update each client record in the list with its new stage and order index
       const promises = dealsList.map((deal, index) => {
         if (!deal.id) return Promise.resolve()
+
+        const updates: any = { stage: stageLabel, order: index }
+
+        // If the stage actually changed, log it to activity_log!
+        if (deal.stage !== stageLabel) {
+          const logEntry = {
+            timestamp: new Date().toLocaleString('id-ID'),
+            action: `Pindah stage: ${deal.stage} ➔ ${stageLabel}`
+          }
+          updates.activity_log = [...(deal.activity_log || []), logEntry]
+        }
+
         return supabase
-          .from('kliens') // Target 'kliens' table!
-          .update({ pipeline: stageLabel, order: index }) // pipeline replaces stage
+          .from('deals')
+          .update(updates)
           .eq('id', deal.id)
       })
 
       const results = await Promise.all(promises)
       
-      // Check if any updates encountered errors
       for (const res of results) {
         if (res && 'error' in res && res.error) {
-          console.error('Error in batch order update on kliens:', res.error.message)
+          console.error('Error in batch order update on deals:', res.error.message)
         }
       }
 
@@ -88,20 +106,55 @@ export const useDealStore = defineStore('deal', {
     async updateDeal(payload: Partial<Deal>, id: number) {
       const supabase = useSupabaseClient()
 
-      // Map payload to Kliens columns
-      const mappedPayload = {
-        nama: payload.name || payload.nama || '',
-        properti: payload.properti || '',
-        harga: payload.harga || '',
-        pipeline: payload.stage || payload.pipeline || 'Prospek',
-        order: payload.order || 0,
-        catatan: payload.deskripsi || payload.catatan || ''
+      // Find old deal to append log entries
+      const oldDeal = this.deals.find(d => d.id === id)
+      const logs = oldDeal ? [...(oldDeal.activity_log || [])] : []
+
+      if (oldDeal) {
+        if (payload.stage && payload.stage !== oldDeal.stage) {
+          logs.push({
+            timestamp: new Date().toLocaleString('id-ID'),
+            action: `Stage diubah: ${oldDeal.stage} ➔ ${payload.stage}`
+          })
+        }
+        if (payload.prioritas && payload.prioritas !== oldDeal.prioritas) {
+          logs.push({
+            timestamp: new Date().toLocaleString('id-ID'),
+            action: `Prioritas diubah: ${oldDeal.prioritas} ➔ ${payload.prioritas}`
+          })
+        }
+        if (payload.harga !== undefined && Number(payload.harga) !== Number(oldDeal.harga)) {
+          logs.push({
+            timestamp: new Date().toLocaleString('id-ID'),
+            action: `Nilai deal diperbarui ke Rp ${Number(payload.harga).toLocaleString('id-ID')}`
+          })
+        }
       }
 
-      const { error } = await supabase.from('kliens').update(mappedPayload).eq('id', id)
+      const rawPayload = {
+        klien_id: payload.klien_id,
+        listing_id: payload.listing_id || null,
+        name: payload.name || '',
+        properti: payload.properti || '',
+        harga: payload.harga || 0,
+        stage: payload.stage,
+        order: payload.order,
+        deskripsi: payload.deskripsi || '',
+        tipe_properti: payload.tipe_properti,
+        tipe_transaksi: payload.tipe_transaksi,
+        tanggal_masuk: payload.tanggal_masuk,
+        target_closing: payload.target_closing || null,
+        sumber_lead: payload.sumber_lead,
+        komisi_persen: payload.komisi_persen || 2.5,
+        prioritas: payload.prioritas || 'Medium',
+        tags: payload.tags || [],
+        activity_log: logs
+      }
+
+      const { error } = await supabase.from('deals').update(rawPayload).eq('id', id)
 
       if (error) {
-        throw new Error('Gagal memperbarui deal klien: ' + error.message)
+        throw new Error('Gagal memperbarui deal: ' + error.message)
       }
       await this.fetchDeals()
       this.closeDrawer()
@@ -109,10 +162,10 @@ export const useDealStore = defineStore('deal', {
 
     async deleteDeal(id: number) {
       const supabase = useSupabaseClient()
-      const { error } = await supabase.from('kliens').delete().eq('id', id)
+      const { error } = await supabase.from('deals').delete().eq('id', id)
 
       if (error) {
-        throw new Error('Gagal menghapus deal klien: ' + error.message)
+        throw new Error('Gagal menghapus deal: ' + error.message)
       }
       await this.fetchDeals()
       this.closeDrawer()
