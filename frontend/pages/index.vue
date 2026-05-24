@@ -10,6 +10,8 @@ useHead({
   ],
 });
 
+import { cacheSWR } from "~/utils/cache";
+
 const dbListings = ref<any[]>([]);
 const isLoading = ref(true);
 
@@ -22,19 +24,25 @@ const searchFilters = ref({
   priceRange: "",
 });
 
+const LISTINGS_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function fetchSupabaseListings() {
   isLoading.value = true;
-  const supabase = useSupabaseClient();
-  const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("status", "Aktif")
-    .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching dashboard listings:", error.message);
-  } else if (data) {
-    dbListings.value = data;
+  const result = await cacheSWR<any[]>("listings:active", async () => {
+    const supabase = useSupabaseClient();
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("status", "Aktif")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }, LISTINGS_TTL);
+
+  if (result.data) {
+    dbListings.value = result.data;
   }
   isLoading.value = false;
 }
