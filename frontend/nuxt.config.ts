@@ -25,6 +25,7 @@ export default defineNuxtConfig({
       supportEmail: process.env.SUPPORT_EMAIL || 'support@gedoong.id',
       supportPhone: process.env.SUPPORT_PHONE || '0812-3456-7890',
       copyrightText: process.env.COPYRIGHT_TEXT || 'Gedoong. Seluruh hak cipta dilindungi.',
+      githubRepo: process.env.GITHUB_REPO || 'https://github.com/faisalaffan/gedoong',
     }
   },
 
