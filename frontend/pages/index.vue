@@ -1,7 +1,14 @@
 <script setup lang="ts">
 useHead({
-  title: 'Portal Properti'
-})
+  title: "Cari Properti & Rumah Impian Terbaik",
+  meta: [
+    {
+      name: "description",
+      content:
+        "Gedoong Portal Properti Premium - Temukan properti terbaik dari agen-agen terpercaya di Indonesia.",
+    },
+  ],
+});
 
 const dbListings = ref<any[]>([]);
 const isLoading = ref(true);
@@ -99,6 +106,7 @@ function mapDbListingToCard(dbItem: any) {
   }
 
   return {
+    id: dbItem.id,
     image: imageUrl,
     title: dbItem.properti || "Tanpa Nama",
     price: formattedPrice,
@@ -214,6 +222,31 @@ onMounted(() => {
             <div class="skeleton-features"></div>
           </div>
         </div>
+      </div>
+
+      <!-- Empty Database State -->
+      <div v-else-if="dbListings.length === 0" class="empty-state">
+        <div class="empty-icon-wrap">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </div>
+        <h3>Belum Ada Properti Terdaftar</h3>
+        <p>
+          Portal kami baru saja diluncurkan! Jadilah agen pertama yang
+          mendaftarkan properti Anda secara gratis.
+        </p>
+        <NuxtLink to="/daftar" class="btn-reset" style="text-decoration: none"
+          >Daftar Sebagai Agen →</NuxtLink
+        >
       </div>
 
       <!-- Empty Results State -->

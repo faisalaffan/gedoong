@@ -2,7 +2,9 @@
 const isOpen = ref(false);
 const links = [
   { label: "Beranda", to: "/" },
+  { label: "Harga", to: "/harga" },
   { label: "Tentang", to: "/tentang" },
+  { label: "Kontak", to: "/kontak" },
 ];
 
 const config = useRuntimeConfig();
