@@ -555,9 +555,10 @@ function toggleTag(tag: string) {
             </button>
           </div>
 
-          <!-- Drawer Body Scroll Area -->
-          <div class="drawer-body">
-            <form @submit.prevent="handleUpdateDeal" class="drawer-form">
+          <!-- Form wraps both scroll body and sticky footer -->
+          <form @submit.prevent="handleUpdateDeal" class="drawer-form-wrapper">
+            <!-- Drawer Body Scroll Area -->
+            <div class="drawer-body">
               <!-- Deal Name Title Input -->
               <div class="form-group-title">
                 <input
@@ -821,42 +822,42 @@ function toggleTag(tag: string) {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Action buttons at bottom -->
-              <div class="drawer-actions">
-                <button type="button" class="btn-delete" @click="handleDeleteDeal">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon-trash"
-                  >
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path
-                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    ></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                  Hapus
+            <!-- Action buttons at bottom -->
+            <div class="drawer-actions">
+              <button type="button" class="btn-delete" @click="handleDeleteDeal">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon-trash"
+                >
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  ></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                Hapus
+              </button>
+              <div class="main-actions">
+                <button type="button" class="btn-cancel" @click="store.closeDrawer">
+                  Batal
                 </button>
-                <div class="main-actions">
-                  <button type="button" class="btn-cancel" @click="store.closeDrawer">
-                    Batal
-                  </button>
-                  <button type="submit" class="btn-submit">
-                    Simpan Perubahan
-                  </button>
-                </div>
+                <button type="submit" class="btn-submit">
+                  Simpan Perubahan
+                </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </Transition>
@@ -1429,10 +1430,11 @@ function toggleTag(tag: string) {
   padding: 24px;
 }
 
-.drawer-form {
+.drawer-form-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
 .form-group-title {
@@ -1784,15 +1786,15 @@ function toggleTag(tag: string) {
   border: 1px dashed #cbd5e1;
 }
 
-/* Action buttons footer inside drawer */
+/* Action buttons footer inside drawer (sticky footer) */
 .drawer-actions {
   border-top: 1px solid #e8ecf1;
-  padding-top: 18px;
-  margin-top: auto;
+  padding: 16px 24px;
+  background: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
+  flex-shrink: 0;
 }
 
 .btn-delete {
