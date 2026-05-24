@@ -16,11 +16,25 @@ function triggerSearch() {
     priceRange: priceRange.value,
   });
 }
+
+// Parallax
+const parallaxY = ref(80); // start at 80% (user's setting)
+
+function handleScroll() {
+  const scrollY = window.scrollY;
+  // Move bg upward as user scrolls down — 0.04 = parallax speed
+  parallaxY.value = Math.max(0, Math.min(100, 80 - scrollY * 0.04));
+}
+
+onMounted(() =>
+  window.addEventListener("scroll", handleScroll, { passive: true }),
+);
+onUnmounted(() => window.removeEventListener("scroll", handleScroll));
 </script>
 
 <template>
   <section class="hero">
-    <div class="hero-bg"></div>
+    <div class="hero-bg" :style="{ backgroundPositionY: parallaxY + '%' }" />
     <div class="hero-content">
       <div class="trust-badges">
         <span class="badge">🛡️ Listing Terverifikasi</span>
@@ -117,8 +131,9 @@ function triggerSearch() {
       rgba(0, 82, 204, 0.7) 50%,
       rgba(11, 28, 48, 0.85) 100%
     ),
-    url("/01_BANNER.png") no-repeat center center;
+    url("/04_THUMBNAIL_UP.png") no-repeat center 80%;
   background-size: cover;
+  background-attachment: scroll; /* parallax handled via JS */
   clip-path: polygon(0 0, 100% 0, 100% 88%, 0 98%);
   z-index: 0;
   transform: scale(1.02);
