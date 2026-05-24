@@ -77,8 +77,35 @@ h5,
 h6 {
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--text-dark);
+  color: inherit;
   letter-spacing: -0.01em;
+}
+
+/* Default dark color for headings in light contexts */
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: var(--text-dark);
+}
+
+/* Hero/dark-background sections — headings and text become white */
+[class*="-hero"] h1,
+[class*="-hero"] h2,
+[class*="-hero"] h3,
+[class*="-hero"] h4,
+[class*="-hero"] p,
+[class*="hero-"] h1,
+[class*="hero-"] h2,
+[class*="hero-"] h3,
+[class*="hero-"] p,
+.hero-section h1,
+.hero-section h2,
+.hero-section h3,
+.hero-section p {
+  color: white !important;
 }
 
 a {
