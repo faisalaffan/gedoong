@@ -88,6 +88,10 @@ onMounted(async () => {
 });
 
 async function onChange(event: any, stageLabel: string) {
+  // Hanya lakukan update jika kartu "ditambahkan" (added) ke kolom ini atau "digeser" (moved) di dalam kolom ini.
+  // Abaikan event "removed" untuk mencegah balap kondisi (race condition) yang membuat kartu memantul beberapa kali.
+  if (event.removed) return;
+
   const stage = stages.value.find((s) => s.label === stageLabel);
   if (stage) {
     await store.updateDealStageAndOrder(stageLabel, stage.deals);

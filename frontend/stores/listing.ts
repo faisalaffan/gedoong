@@ -61,14 +61,22 @@ export const useListingStore = defineStore('listing', {
         if (error) throw new Error('Gagal mengupdate listing: ' + error.message)
         
         // Log activity to Supabase
-        await supabase.from('activities').insert([{ description: `Memperbarui informasi properti "${payload.properti}".` }]).catch(() => {})
+        try {
+          await supabase.from('activities').insert([{ description: `Memperbarui informasi properti "${payload.properti}".` }])
+        } catch (err) {
+          console.error('Failed to log activity:', err)
+        }
       } else {
         const { error } = await supabase.from('listings').insert([payload])
         if (error) throw new Error('Gagal menambahkan listing: ' + error.message)
         
         // Log activity to Supabase
         const formattedPrice = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(payload.harga || 0))
-        await supabase.from('activities').insert([{ description: `Menambahkan properti baru "${payload.properti}" (${formattedPrice}).` }]).catch(() => {})
+        try {
+          await supabase.from('activities').insert([{ description: `Menambahkan properti baru "${payload.properti}" (${formattedPrice}).` }])
+        } catch (err) {
+          console.error('Failed to log activity:', err)
+        }
       }
 
       await this.fetchListings()
@@ -91,7 +99,11 @@ export const useListingStore = defineStore('listing', {
       if (error) throw new Error(error.message)
 
       // Log activity to Supabase
-      await supabase.from('activities').insert([{ description: `Menghapus properti "${listing.properti}" secara permanen.` }]).catch(() => {})
+      try {
+        await supabase.from('activities').insert([{ description: `Menghapus properti "${listing.properti}" secara permanen.` }])
+      } catch (err) {
+        console.error('Failed to log activity:', err)
+      }
 
       this.closeDrawer()
       await this.fetchListings()

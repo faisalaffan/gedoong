@@ -79,13 +79,21 @@ export const useKlienStore = defineStore('klien', {
         if (error) throw new Error('Gagal mengupdate klien: ' + error.message)
 
         // Log activity to Supabase
-        await supabase.from('activities').insert([{ description: `Memperbarui data klien "${rawPayload.nama}".` }]).catch(() => {})
+        try {
+          await supabase.from('activities').insert([{ description: `Memperbarui data klien "${rawPayload.nama}".` }])
+        } catch (err) {
+          console.error('Failed to log activity:', err)
+        }
       } else {
         const { error } = await supabase.from('kliens').insert([rawPayload])
         if (error) throw new Error('Gagal menambahkan klien: ' + error.message)
 
         // Log activity to Supabase
-        await supabase.from('activities').insert([{ description: `Menambahkan klien baru "${rawPayload.nama}" dengan kontak ${rawPayload.kontak}.` }]).catch(() => {})
+        try {
+          await supabase.from('activities').insert([{ description: `Menambahkan klien baru "${rawPayload.nama}" dengan kontak ${rawPayload.kontak}.` }])
+        } catch (err) {
+          console.error('Failed to log activity:', err)
+        }
       }
 
       await this.fetchKliens()
@@ -108,7 +116,11 @@ export const useKlienStore = defineStore('klien', {
       if (error) throw new Error(error.message)
 
       // Log activity to Supabase
-      await supabase.from('activities').insert([{ description: `Menghapus data klien "${klien.nama}".` }]).catch(() => {})
+      try {
+        await supabase.from('activities').insert([{ description: `Menghapus data klien "${klien.nama}".` }])
+      } catch (err) {
+        console.error('Failed to log activity:', err)
+      }
 
       this.closeDrawer()
       await this.fetchKliens()

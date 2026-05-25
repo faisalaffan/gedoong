@@ -68,7 +68,11 @@ export const useDealStore = defineStore('deal', {
 
       // Log activity to Supabase
       const formattedPrice = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(payload.harga || 0))
-      await supabase.from('activities').insert([{ description: `Membuat kesepakatan baru "${payload.name}" senilai ${formattedPrice}.` }]).catch(() => {})
+      try {
+        await supabase.from('activities').insert([{ description: `Membuat kesepakatan baru "${payload.name}" senilai ${formattedPrice}.` }])
+      } catch (err) {
+        console.error('Failed to log activity:', err)
+      }
 
       await this.fetchDeals()
       this.closeModal()
@@ -91,7 +95,11 @@ export const useDealStore = defineStore('deal', {
           updates.activity_log = [...(deal.activity_log || []), logEntry]
 
           // Log activity to Supabase
-          await supabase.from('activities').insert([{ description: `Memindahkan kesepakatan "${deal.name}" ke tahap ${stageLabel}.` }]).catch(() => {})
+          try {
+            await supabase.from('activities').insert([{ description: `Memindahkan kesepakatan "${deal.name}" ke tahap ${stageLabel}.` }])
+          } catch (err) {
+            console.error('Failed to log activity:', err)
+          }
         }
 
         return supabase
@@ -166,7 +174,11 @@ export const useDealStore = defineStore('deal', {
       }
 
       // Log activity to Supabase
-      await supabase.from('activities').insert([{ description: `Memperbarui rincian kesepakatan "${payload.name}".` }]).catch(() => {})
+      try {
+        await supabase.from('activities').insert([{ description: `Memperbarui rincian kesepakatan "${payload.name}".` }])
+      } catch (err) {
+        console.error('Failed to log activity:', err)
+      }
 
       await this.fetchDeals()
       this.closeDrawer()
@@ -184,7 +196,11 @@ export const useDealStore = defineStore('deal', {
 
       // Log activity to Supabase
       if (oldDeal) {
-        await supabase.from('activities').insert([{ description: `Menghapus kesepakatan "${oldDeal.name}".` }]).catch(() => {})
+        try {
+          await supabase.from('activities').insert([{ description: `Menghapus kesepakatan "${oldDeal.name}".` }])
+        } catch (err) {
+          console.error('Failed to log activity:', err)
+        }
       }
 
       await this.fetchDeals()

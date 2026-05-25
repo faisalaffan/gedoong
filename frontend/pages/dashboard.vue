@@ -22,7 +22,55 @@ const pipelineStages = ref([
   { label: "Deal", count: 0 },
 ]);
 
-const activities = ref<string[]>([]);
+const activities = ref<any[]>([]);
+
+function getActivityType(desc: string) {
+  const text = desc.toLowerCase()
+  if (text.includes('menambahkan') || text.includes('membuat') || text.includes('mencatat')) {
+    return {
+      label: 'Tambah',
+      color: '#16a34a',
+      bg: '#f0fdf4',
+      icon: '✨'
+    }
+  }
+  if (text.includes('menghapus')) {
+    return {
+      label: 'Hapus',
+      color: '#dc2626',
+      bg: '#fef2f2',
+      icon: '🗑️'
+    }
+  }
+  if (text.includes('memindahkan') || text.includes('pindah')) {
+    return {
+      label: 'Pipeline',
+      color: '#ea580c',
+      bg: '#fff7ed',
+      icon: '📋'
+    }
+  }
+  return {
+    label: 'Update',
+    color: '#0052cc',
+    bg: '#eff6ff',
+    icon: '📝'
+  }
+}
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
+}
 
 onMounted(async () => {
   const supabase = useSupabaseClient();
@@ -60,39 +108,18 @@ onMounted(async () => {
     }).format(totalPaid);
   }
 
-  // 5. Fetch dynamic recent activities from Supabase activities table (TTL 5 minutes cache fallback)
+  // 5. Fetch dynamic recent activities (Limit to 5 for clean dashboard)
   const { data: recentActivities, error: actError } = await supabase
     .from("activities")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(5);
 
   if (actError) {
     console.error("Error fetching activities:", actError.message);
   }
 
-  const list: string[] = [];
-
-  if (recentActivities && recentActivities.length > 0) {
-    recentActivities.forEach((act: any) => {
-      const timeStr = new Date(act.created_at).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      const dateStr = new Date(act.created_at).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-      });
-      list.push(`[${dateStr} ${timeStr}] ${act.description}`);
-    });
-  }
-
-  // Fallback if no records yet
-  if (list.length === 0) {
-    list.push("Belum ada aktivitas tercatat di sistem.");
-  }
-
-  activities.value = list;
+  activities.value = recentActivities || [];
 });
 </script>
 
@@ -122,11 +149,49 @@ onMounted(async () => {
     </div>
 
     <div class="dashboard-grid">
+      <!-- Beautified Recent Activities -->
       <div class="card card-aktivitas">
-        <h3 class="card-title">Aktivitas Terbaru</h3>
-        <ul class="aktivitas-list">
-          <li v-for="(item, i) in activities" :key="i" class="aktivitas-item">
-            {{ item }}
+        <div class="card-header-flex">
+          <h3 class="card-title">Aktivitas Terbaru</h3>
+          <NuxtLink to="/aktivitas" class="btn-view-all">
+            Lihat Semua →
+          </NuxtLink>
+        </div>
+        
+        <div v-if="activities.length === 0" class="empty-activities">
+          <span class="empty-icon">📭</span>
+          <p>Belum ada aktivitas tercatat di sistem.</p>
+        </div>
+        
+        <ul v-else class="activities-timeline">
+          <li v-for="item in activities" :key="item.id" class="timeline-item">
+            <div class="timeline-dot-wrapper">
+              <div 
+                class="timeline-dot" 
+                :style="{ backgroundColor: getActivityType(item.description).color }"
+              >
+                {{ getActivityType(item.description).icon }}
+              </div>
+              <div class="timeline-line"></div>
+            </div>
+            
+            <div class="timeline-content">
+              <div class="timeline-body">
+                <span 
+                  class="activity-badge" 
+                  :style="{ 
+                    color: getActivityType(item.description).color,
+                    backgroundColor: getActivityType(item.description).bg
+                  }"
+                >
+                  {{ getActivityType(item.description).label }}
+                </span>
+                <p class="activity-desc">{{ item.description }}</p>
+              </div>
+              <span class="activity-time">
+                {{ formatDate(item.created_at) }}, {{ formatTime(item.created_at) }}
+              </span>
+            </div>
           </li>
         </ul>
       </div>
@@ -173,6 +238,7 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 20px;
   text-align: center;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-value {
@@ -203,24 +269,135 @@ onMounted(async () => {
   font-size: 15px;
   font-weight: 700;
   color: #041b3c;
-  margin-bottom: 16px;
+  margin: 0;
 }
 
-.aktivitas-list {
+/* Beautified Activities Timeline styling */
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-view-all {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.btn-view-all:hover {
+  color: var(--primary-hover);
+}
+
+.empty-activities {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.activities-timeline {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-.aktivitas-item {
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.timeline-dot-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: white;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.timeline-line {
+  width: 2px;
+  flex-grow: 1;
+  background: #e8ecf1;
+  margin-top: 4px;
+}
+
+.timeline-item:last-child .timeline-line {
+  display: none;
+}
+
+.timeline-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 20px;
+  gap: 16px;
+}
+
+.timeline-item:last-child .timeline-content {
+  padding-bottom: 0;
+}
+
+.timeline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.activity-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.activity-desc {
+  font-family: var(--font-body);
   font-size: 13px;
-  color: #434654;
-  padding-left: 8px;
-  border-left: 2px solid #e8ecf1;
-  line-height: 1.5;
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.activity-time {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  margin-top: 2px;
 }
 
 .pipeline-summary {
