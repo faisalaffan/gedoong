@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { db } from '~/utils/db'
+import { useListingStore } from '~/stores/listing'
+import { useDealStore } from '~/stores/deal'
+import { useKomisiStore } from '~/stores/komisi'
 
 definePageMeta({ layout: 'dashboard' })
+
+const listingStore = useListingStore()
+const dealStore = useDealStore()
+const komisiStore = useKomisiStore()
 
 const totalListings = ref(0)
 const dealCount = ref(0)
@@ -22,55 +27,43 @@ const activities = ref<string[]>([])
 onMounted(async () => {
   const supabase = useSupabaseClient()
 
-  // 1. Total listings count from Supabase listings table
-  const { count: listingsCount, error: countError } = await supabase
-    .from('listings')
-    .select('*', { count: 'exact', head: true })
+  // 1. Fetch all store data concurrently using Gedoong's reactive Pinia stores
+  await Promise.all([
+    listingStore.fetchListings(),
+    dealStore.fetchDeals(),
+    komisiStore.fetchKomisiList()
+  ])
+
+  // 2. Map statistics from Pinia stores
+  totalListings.value = listingStore.listings.length
   
-  if (!countError && listingsCount !== null) {
-    totalListings.value = listingsCount
+  const allDeals = dealStore.deals
+  dealCount.value = allDeals.filter((d: any) => d.stage === 'Deal').length
+  followUpCount.value = allDeals.filter((d: any) => d.stage === 'Follow-up').length
+
+  // 3. Map pipeline summary stage counts
+  pipelineStages.value.forEach(stage => {
+    stage.count = allDeals.filter((d: any) => d.stage === stage.label).length
+  })
+
+  // 4. Calculate total paid commission from komisiStore
+  const totalPaid = komisiStore.totalDibayar
+  if (totalPaid >= 1000000) {
+    totalCommission.value = `Rp ${(totalPaid / 1000000).toFixed(0)}jt`
+  } else {
+    totalCommission.value = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalPaid)
   }
 
-  // 2. Fetch all deals from Supabase
-  const { data: allDeals } = await supabase
-    .from('deals')
-    .select('*')
-  
-  if (allDeals) {
-    dealCount.value = allDeals.filter((d: any) => d.stage === 'Deal').length
-    followUpCount.value = allDeals.filter((d: any) => d.stage === 'Follow-up').length
-
-    // 5. Aggregate pipeline summary stage count
-    pipelineStages.value.forEach(stage => {
-      stage.count = allDeals.filter((d: any) => d.stage === stage.label).length
-    })
-  }
-
-  // 3. Calculate total paid commission from Supabase
-  const { data: allCommissions } = await supabase
-    .from('komisi')
-    .select('*')
-  
-  if (allCommissions) {
-    const paidCommissions = allCommissions.filter((k: any) => k.status === 'Dibayar')
-    const totalPaid = paidCommissions.reduce((acc: number, curr: any) => {
-      return acc + (Number(curr.komisi) || 0)
-    }, 0)
-
-    // Format to e.g. Rp 32jt format or detailed currency
-    if (totalPaid >= 1000000) {
-      totalCommission.value = `Rp ${(totalPaid / 1000000).toFixed(0)}jt`
-    } else {
-      totalCommission.value = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalPaid)
-    }
-  }
-
-  // 4. Fetch dynamic recent activities from Supabase activities table
-  const { data: recentActivities } = await supabase
+  // 5. Fetch dynamic recent activities from Supabase activities table (TTL 5 minutes cache fallback)
+  const { data: recentActivities, error: actError } = await supabase
     .from('activities')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(10)
+  
+  if (actError) {
+    console.error("Error fetching activities:", actError.message)
+  }
   
   const list: string[] = []
 
