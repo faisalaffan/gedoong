@@ -1,87 +1,99 @@
 <script setup lang="ts">
-import { useListingStore } from '~/stores/listing'
-import { useDealStore } from '~/stores/deal'
-import { useKomisiStore } from '~/stores/komisi'
+import { useListingStore } from "~/stores/listing";
+import { useDealStore } from "~/stores/deal";
+import { useKomisiStore } from "~/stores/komisi";
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: "dashboard" });
 
-const listingStore = useListingStore()
-const dealStore = useDealStore()
-const komisiStore = useKomisiStore()
+const listingStore = useListingStore();
+const dealStore = useDealStore();
+const komisiStore = useKomisiStore();
 
-const totalListings = ref(0)
-const dealCount = ref(0)
-const followUpCount = ref(0)
-const totalCommission = ref('Rp 0jt')
+const totalListings = ref(0);
+const dealCount = ref(0);
+const followUpCount = ref(0);
+const totalCommission = ref("Rp 0jt");
 
 const pipelineStages = ref([
-  { label: 'Prospek', count: 0 },
-  { label: 'Follow-up', count: 0 },
-  { label: 'Nego', count: 0 },
-  { label: 'Closing', count: 0 },
-  { label: 'Deal', count: 0 },
-])
+  { label: "Prospek", count: 0 },
+  { label: "Follow-up", count: 0 },
+  { label: "Nego", count: 0 },
+  { label: "Closing", count: 0 },
+  { label: "Deal", count: 0 },
+]);
 
-const activities = ref<string[]>([])
+const activities = ref<string[]>([]);
 
 onMounted(async () => {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient();
 
   // 1. Fetch all store data concurrently using Gedoong's reactive Pinia stores
   await Promise.all([
     listingStore.fetchListings(),
     dealStore.fetchDeals(),
-    komisiStore.fetchKomisiList()
-  ])
+    komisiStore.fetchKomisiList(),
+  ]);
 
   // 2. Map statistics from Pinia stores
-  totalListings.value = listingStore.listings.length
-  
-  const allDeals = dealStore.deals
-  dealCount.value = allDeals.filter((d: any) => d.stage === 'Deal').length
-  followUpCount.value = allDeals.filter((d: any) => d.stage === 'Follow-up').length
+  totalListings.value = listingStore.listings.length;
+
+  const allDeals = dealStore.deals;
+  dealCount.value = allDeals.filter((d: any) => d.stage === "Deal").length;
+  followUpCount.value = allDeals.filter(
+    (d: any) => d.stage === "Follow-up",
+  ).length;
 
   // 3. Map pipeline summary stage counts
-  pipelineStages.value.forEach(stage => {
-    stage.count = allDeals.filter((d: any) => d.stage === stage.label).length
-  })
+  pipelineStages.value.forEach((stage) => {
+    stage.count = allDeals.filter((d: any) => d.stage === stage.label).length;
+  });
 
   // 4. Calculate total paid commission from komisiStore
-  const totalPaid = komisiStore.totalDibayar
+  const totalPaid = komisiStore.totalDibayar;
   if (totalPaid >= 1000000) {
-    totalCommission.value = `Rp ${(totalPaid / 1000000).toFixed(0)}jt`
+    totalCommission.value = `Rp ${(totalPaid / 1000000).toFixed(0)}jt`;
   } else {
-    totalCommission.value = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalPaid)
+    totalCommission.value = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(totalPaid);
   }
 
   // 5. Fetch dynamic recent activities from Supabase activities table (TTL 5 minutes cache fallback)
   const { data: recentActivities, error: actError } = await supabase
-    .from('activities')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10)
-  
+    .from("activities")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
   if (actError) {
-    console.error("Error fetching activities:", actError.message)
+    console.error("Error fetching activities:", actError.message);
   }
-  
-  const list: string[] = []
+
+  const list: string[] = [];
 
   if (recentActivities && recentActivities.length > 0) {
     recentActivities.forEach((act: any) => {
-      const timeStr = new Date(act.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      const dateStr = new Date(act.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-      list.push(`[${dateStr} ${timeStr}] ${act.description}`)
-    })
+      const timeStr = new Date(act.created_at).toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const dateStr = new Date(act.created_at).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+      });
+      list.push(`[${dateStr} ${timeStr}] ${act.description}`);
+    });
   }
 
   // Fallback if no records yet
   if (list.length === 0) {
-    list.push('Belum ada aktivitas tercatat di sistem.')
+    list.push("Belum ada aktivitas tercatat di sistem.");
   }
 
-  activities.value = list
-})
+  activities.value = list;
+});
 </script>
 
 <template>
@@ -90,7 +102,7 @@ onMounted(async () => {
 
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value" style="color: #0052CC">{{ totalListings }}</div>
+        <div class="stat-value" style="color: #0052cc">{{ totalListings }}</div>
         <div class="stat-label">Total Listing</div>
       </div>
       <div class="stat-card">
@@ -102,7 +114,9 @@ onMounted(async () => {
         <div class="stat-label">Follow-up Aktif</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" style="color: #0052CC">{{ totalCommission }}</div>
+        <div class="stat-value" style="color: #0052cc">
+          {{ totalCommission }}
+        </div>
         <div class="stat-label">Komisi Bulan Ini</div>
       </div>
     </div>
@@ -231,7 +245,7 @@ onMounted(async () => {
 
 .stage-count {
   font-weight: 700;
-  color: #0052CC;
+  color: #0052cc;
 }
 
 @media (max-width: 900px) {
