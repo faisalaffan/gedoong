@@ -129,6 +129,9 @@ async function handleLogin() {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
+      options: {
+        captchaToken: captchaToken.value,
+      },
     })
 
     if (error) {
