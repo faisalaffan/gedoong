@@ -88,9 +88,16 @@ export const useKomisiStore = defineStore('komisi', {
       if (editingId !== null) {
         const { error } = await supabase.from('komisi').update(rawPayload).eq('id', editingId)
         if (error) throw new Error('Gagal mengupdate komisi: ' + error.message)
+
+        // Log activity to Supabase
+        await supabase.from('activities').insert([{ description: `Mengubah status komisi properti "${rawPayload.properti}" menjadi ${rawPayload.status}.` }]).catch(() => {})
       } else {
         const { error } = await supabase.from('komisi').insert([rawPayload])
         if (error) throw new Error('Gagal menambahkan komisi: ' + error.message)
+
+        // Log activity to Supabase
+        const formattedCommission = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(rawPayload.komisi)
+        await supabase.from('activities').insert([{ description: `Mencatat transaksi komisi ${formattedCommission} untuk properti "${rawPayload.properti}".` }]).catch(() => {})
       }
 
       await this.fetchKomisiList()
@@ -111,6 +118,9 @@ export const useKomisiStore = defineStore('komisi', {
       const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('komisi').delete().eq('id', komisi.id)
       if (error) throw new Error(error.message)
+
+      // Log activity to Supabase
+      await supabase.from('activities').insert([{ description: `Menghapus pencatatan komisi untuk properti "${komisi.properti}".` }]).catch(() => {})
 
       this.closeDrawer()
       await this.fetchKomisiList()

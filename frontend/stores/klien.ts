@@ -77,9 +77,15 @@ export const useKlienStore = defineStore('klien', {
       if (editingId !== null) {
         const { error } = await supabase.from('kliens').update(rawPayload).eq('id', editingId)
         if (error) throw new Error('Gagal mengupdate klien: ' + error.message)
+
+        // Log activity to Supabase
+        await supabase.from('activities').insert([{ description: `Memperbarui data klien "${rawPayload.nama}".` }]).catch(() => {})
       } else {
         const { error } = await supabase.from('kliens').insert([rawPayload])
         if (error) throw new Error('Gagal menambahkan klien: ' + error.message)
+
+        // Log activity to Supabase
+        await supabase.from('activities').insert([{ description: `Menambahkan klien baru "${rawPayload.nama}" dengan kontak ${rawPayload.kontak}.` }]).catch(() => {})
       }
 
       await this.fetchKliens()
@@ -100,6 +106,9 @@ export const useKlienStore = defineStore('klien', {
       const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('kliens').delete().eq('id', klien.id)
       if (error) throw new Error(error.message)
+
+      // Log activity to Supabase
+      await supabase.from('activities').insert([{ description: `Menghapus data klien "${klien.nama}".` }]).catch(() => {})
 
       this.closeDrawer()
       await this.fetchKliens()

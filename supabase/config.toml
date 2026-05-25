@@ -126,9 +126,6 @@ max_frequency = "1s"
 enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
-# Template for sending OTP to users
-otp_exp = 60
-otp_length = 6
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 #[auth.sms.twilio]
@@ -157,9 +154,6 @@ max_frequency = "5s"
 enabled = false
 
 [auth.third_party.auth0]
-enabled = false
-
-[auth.third_party.cognito]
 enabled = false
 
 [edge_runtime]

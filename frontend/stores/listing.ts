@@ -59,9 +59,16 @@ export const useListingStore = defineStore('listing', {
       if (editingId !== null) {
         const { error } = await supabase.from('listings').update(payload).eq('id', editingId)
         if (error) throw new Error('Gagal mengupdate listing: ' + error.message)
+        
+        // Log activity to Supabase
+        await supabase.from('activities').insert([{ description: `Memperbarui informasi properti "${payload.properti}".` }]).catch(() => {})
       } else {
         const { error } = await supabase.from('listings').insert([payload])
         if (error) throw new Error('Gagal menambahkan listing: ' + error.message)
+        
+        // Log activity to Supabase
+        const formattedPrice = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(payload.harga || 0))
+        await supabase.from('activities').insert([{ description: `Menambahkan properti baru "${payload.properti}" (${formattedPrice}).` }]).catch(() => {})
       }
 
       await this.fetchListings()
@@ -82,6 +89,9 @@ export const useListingStore = defineStore('listing', {
       const supabase = useSupabaseClient<any>()
       const { error } = await supabase.from('listings').delete().eq('id', listing.id)
       if (error) throw new Error(error.message)
+
+      // Log activity to Supabase
+      await supabase.from('activities').insert([{ description: `Menghapus properti "${listing.properti}" secara permanen.` }]).catch(() => {})
 
       this.closeDrawer()
       await this.fetchListings()

@@ -65,6 +65,11 @@ export const useDealStore = defineStore('deal', {
       if (error) {
         throw new Error('Gagal mencatat deal baru: ' + error.message)
       }
+
+      // Log activity to Supabase
+      const formattedPrice = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(payload.harga || 0))
+      await supabase.from('activities').insert([{ description: `Membuat kesepakatan baru "${payload.name}" senilai ${formattedPrice}.` }]).catch(() => {})
+
       await this.fetchDeals()
       this.closeModal()
     },
@@ -72,18 +77,21 @@ export const useDealStore = defineStore('deal', {
     async updateDealStageAndOrder(stageLabel: string, dealsList: Deal[]) {
       const supabase = useSupabaseClient<any>()
       
-      const promises = dealsList.map((deal, index) => {
+      const promises = dealsList.map(async (deal, index) => {
         if (!deal.id) return Promise.resolve()
 
         const updates: any = { stage: stageLabel, order: index }
 
-        // If the stage actually changed, log it to activity_log!
+        // If the stage actually changed, log it to activity_log and log globally!
         if (deal.stage !== stageLabel) {
           const logEntry = {
             timestamp: new Date().toLocaleString('id-ID'),
             action: `Pindah stage: ${deal.stage} ➔ ${stageLabel}`
           }
           updates.activity_log = [...(deal.activity_log || []), logEntry]
+
+          // Log activity to Supabase
+          await supabase.from('activities').insert([{ description: `Memindahkan kesepakatan "${deal.name}" ke tahap ${stageLabel}.` }]).catch(() => {})
         }
 
         return supabase
@@ -156,17 +164,29 @@ export const useDealStore = defineStore('deal', {
       if (error) {
         throw new Error('Gagal memperbarui deal: ' + error.message)
       }
+
+      // Log activity to Supabase
+      await supabase.from('activities').insert([{ description: `Memperbarui rincian kesepakatan "${payload.name}".` }]).catch(() => {})
+
       await this.fetchDeals()
       this.closeDrawer()
     },
 
     async deleteDeal(id: number) {
       const supabase = useSupabaseClient<any>()
+      const oldDeal = this.deals.find(d => d.id === id)
+      
       const { error } = await supabase.from('deals').delete().eq('id', id)
 
       if (error) {
         throw new Error('Gagal menghapus deal: ' + error.message)
       }
+
+      // Log activity to Supabase
+      if (oldDeal) {
+        await supabase.from('activities').insert([{ description: `Menghapus kesepakatan "${oldDeal.name}".` }]).catch(() => {})
+      }
+
       await this.fetchDeals()
       this.closeDrawer()
     },

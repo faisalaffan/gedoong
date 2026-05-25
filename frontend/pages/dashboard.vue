@@ -20,62 +20,74 @@ const pipelineStages = ref([
 const activities = ref<string[]>([])
 
 onMounted(async () => {
-  // 1. Total listings count from Supabase listings table
   const supabase = useSupabaseClient()
-  const { count, error: countError } = await supabase
+
+  // 1. Total listings count from Supabase listings table
+  const { count: listingsCount, error: countError } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
   
-  if (!countError && count !== null) {
-    totalListings.value = count
+  if (!countError && listingsCount !== null) {
+    totalListings.value = listingsCount
   }
 
-  // 2. Fetch all deals from IndexedDB
-  const allDeals = await db.deals.toArray()
+  // 2. Fetch all deals from Supabase
+  const { data: allDeals } = await supabase
+    .from('deals')
+    .select('*')
   
-  // 3. Count stages
-  dealCount.value = allDeals.filter(d => d.stage === 'Deal').length
-  followUpCount.value = allDeals.filter(d => d.stage === 'Follow-up').length
+  if (allDeals) {
+    dealCount.value = allDeals.filter((d: any) => d.stage === 'Deal').length
+    followUpCount.value = allDeals.filter((d: any) => d.stage === 'Follow-up').length
 
-  // 4. Calculate total paid commission
-  const allCommissions = await db.komisi.toArray()
-  const paidCommissions = allCommissions.filter(k => k.status === 'Dibayar')
-  const totalPaid = paidCommissions.reduce((acc, curr) => {
-    const val = parseInt(curr.komisi.replace(/\D/g, "")) || 0
-    return acc + val
-  }, 0)
-  totalCommission.value = `Rp ${totalPaid}jt`
+    // 5. Aggregate pipeline summary stage count
+    pipelineStages.value.forEach(stage => {
+      stage.count = allDeals.filter((d: any) => d.stage === stage.label).length
+    })
+  }
 
-  // 5. Aggregate pipeline summary stage count
-  pipelineStages.value.forEach(stage => {
-    stage.count = allDeals.filter(d => d.stage === stage.label).length
-  })
+  // 3. Calculate total paid commission from Supabase
+  const { data: allCommissions } = await supabase
+    .from('komisi')
+    .select('*')
+  
+  if (allCommissions) {
+    const paidCommissions = allCommissions.filter((k: any) => k.status === 'Dibayar')
+    const totalPaid = paidCommissions.reduce((acc: number, curr: any) => {
+      return acc + (Number(curr.komisi) || 0)
+    }, 0)
 
-  // 6. Generate dynamic recent activities
-  const allClients = await db.kliens.toArray()
+    // Format to e.g. Rp 32jt format or detailed currency
+    if (totalPaid >= 1000000) {
+      totalCommission.value = `Rp ${(totalPaid / 1000000).toFixed(0)}jt`
+    } else {
+      totalCommission.value = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalPaid)
+    }
+  }
+
+  // 4. Fetch dynamic recent activities from Supabase activities table
+  const { data: recentActivities } = await supabase
+    .from('activities')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10)
+  
   const list: string[] = []
 
-  // Add deals activities
-  allDeals.slice(-2).forEach(deal => {
-    list.push(`Kesepakatan dengan ${deal.name} untuk properti "${deal.properti}" berada di tahap ${deal.stage}.`)
-  })
-
-  // Add commission activities
-  allCommissions.slice(-2).forEach(k => {
-    list.push(`Pencatatan keuangan: Komisi ${k.komisi} untuk "${k.properti}" saat ini berstatus ${k.status}.`)
-  })
-
-  // Add client list activities
-  allClients.slice(-2).forEach(c => {
-    list.push(`Data kontak klien "${c.nama}" (${c.kontak}) siap dikelola di direktori.`)
-  })
+  if (recentActivities && recentActivities.length > 0) {
+    recentActivities.forEach((act: any) => {
+      const timeStr = new Date(act.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      const dateStr = new Date(act.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+      list.push(`[${dateStr} ${timeStr}] ${act.description}`)
+    })
+  }
 
   // Fallback if no records yet
   if (list.length === 0) {
     list.push('Belum ada aktivitas tercatat di sistem.')
   }
 
-  activities.value = list.reverse()
+  activities.value = list
 })
 </script>
 
