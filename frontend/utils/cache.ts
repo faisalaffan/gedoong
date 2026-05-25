@@ -18,7 +18,15 @@ class ListingCacheDB extends Dexie {
   }
 }
 
-const db = new ListingCacheDB();
+let db: ListingCacheDB | null = null;
+
+function getDB() {
+  if (typeof window === "undefined") return null;
+  if (!db) {
+    db = new ListingCacheDB();
+  }
+  return db;
+}
 
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -28,10 +36,12 @@ function isExpired(entry: CacheEntry): boolean {
 
 export async function cacheGet<T = any>(key: string): Promise<T | null> {
   try {
-    const entry = await db.cache.get(key);
+    const localDb = getDB();
+    if (!localDb) return null;
+    const entry = await localDb.cache.get(key);
     if (!entry) return null;
     if (isExpired(entry)) {
-      db.cache.delete(key); // fire-and-forget cleanup
+      localDb.cache.delete(key); // fire-and-forget cleanup
       return null;
     }
     return entry.value as T;
@@ -42,7 +52,9 @@ export async function cacheGet<T = any>(key: string): Promise<T | null> {
 
 export async function cacheSet(key: string, value: any, ttlMs = DEFAULT_TTL): Promise<void> {
   try {
-    await db.cache.put({
+    const localDb = getDB();
+    if (!localDb) return;
+    await localDb.cache.put({
       key,
       value,
       storedAt: Date.now(),
@@ -55,7 +67,9 @@ export async function cacheSet(key: string, value: any, ttlMs = DEFAULT_TTL): Pr
 
 export async function cacheDelete(key: string): Promise<void> {
   try {
-    await db.cache.delete(key);
+    const localDb = getDB();
+    if (!localDb) return;
+    await localDb.cache.delete(key);
   } catch {
     // silently fail
   }
