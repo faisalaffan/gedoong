@@ -26,14 +26,15 @@ export default defineNuxtConfig({
       supportPhone: process.env.SUPPORT_PHONE || '0812-3456-7890',
       copyrightText: process.env.COPYRIGHT_TEXT || 'Gedoong. Seluruh hak cipta dilindungi.',
       githubRepo: process.env.GITHUB_REPO || 'https://github.com/faisalaffan/gedoong',
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
     }
   },
 
   modules: ['@nuxtjs/supabase', '@pinia/nuxt'],
 
   supabase: {
-    url: process.env.SUPABASE_URL || 'https://pkcjhfuelyexpsypqcct.supabase.co',
-    key: process.env.SUPABASE_KEY || 'sb_publishable_RY2OFo6z33oRZlIVMh3Lyg_-asO0pQI',
+    url: process.env.SUPABASE_URL || '',
+    key: process.env.SUPABASE_KEY || '',
     redirect: false,
   },
 

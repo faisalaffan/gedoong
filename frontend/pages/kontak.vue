@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "~/composables/useToast";
 import ToastContainer from "~/components/listing/ToastContainer.vue";
 
@@ -7,7 +7,14 @@ useHead({
   title: 'Hubungi Kami - Gedoong Support'
 })
 
+const config = useRuntimeConfig();
+const turnstileSiteKey = config.public.turnstileSiteKey;
 const { toasts, showToast } = useToast();
+const { renderTurnstile, resetTurnstile, token: captchaToken, isVerified: captchaVerified } = useTurnstile();
+
+onMounted(() => {
+  renderTurnstile("turnstile-kontak", turnstileSiteKey);
+});
 
 const form = ref({
   nama: "",
@@ -23,21 +30,26 @@ async function handleSubmit() {
     showToast("Harap lengkapi semua kolom wajib (*)", "error");
     return;
   }
+  if (!captchaToken.value) {
+    showToast("Mohon selesaikan verifikasi keamanan di bawah.", "error");
+    return;
+  }
 
   isSubmitting.value = true;
-  
+
   // Simulate network request
   await new Promise((resolve) => setTimeout(resolve, 800));
-  
+
   showToast("Pesan Anda berhasil dikirim! Tim support kami akan segera membalas email Anda.", "success");
-  
+
   form.value = {
     nama: "",
     email: "",
     subjek: "",
     pesan: ""
   };
-  
+  resetTurnstile();
+
   isSubmitting.value = false;
 }
 </script>
@@ -140,7 +152,11 @@ async function handleSubmit() {
               ></textarea>
             </div>
 
-            <button type="submit" class="btn-submit" :disabled="isSubmitting">
+            <div class="turnstile-wrap">
+              <div id="turnstile-kontak"></div>
+            </div>
+
+            <button type="submit" class="btn-submit" :disabled="isSubmitting || !captchaVerified">
               {{ isSubmitting ? 'Mengirim...' : 'Kirim Pesan ➔' }}
             </button>
           </form>
@@ -342,6 +358,11 @@ async function handleSubmit() {
 
 .form-textarea {
   resize: vertical;
+}
+
+.turnstile-wrap {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .btn-submit {

@@ -49,7 +49,11 @@
           />
         </div>
 
-        <button class="btn-submit" type="submit" :disabled="isLoading">
+        <div class="turnstile-wrap">
+          <div id="turnstile-login"></div>
+        </div>
+
+        <button class="btn-submit" type="submit" :disabled="isLoading || !captchaVerified">
           <span v-if="isLoading" class="spinner"></span>
           <span v-else>Masuk ke Dashboard</span>
         </button>
@@ -86,6 +90,7 @@
 const config = useRuntimeConfig()
 const appName = config.public.appName
 const appLogo = config.public.appLogo
+const turnstileSiteKey = config.public.turnstileSiteKey
 
 useHead({
   title: 'Masuk ke Dashboard'
@@ -93,16 +98,26 @@ useHead({
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+const { renderTurnstile, resetTurnstile, token: captchaToken, isVerified: captchaVerified } = useTurnstile()
 
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const loginAttempts = ref(0)
+
+onMounted(() => {
+  renderTurnstile("turnstile-login", turnstileSiteKey)
+})
 
 async function handleLogin() {
   if (!email.value || !password.value) {
     errorMessage.value = 'Silakan isi email dan password Anda.'
+    return
+  }
+  if (!captchaToken.value) {
+    errorMessage.value = 'Mohon selesaikan verifikasi keamanan di bawah.'
     return
   }
 
@@ -117,9 +132,11 @@ async function handleLogin() {
     })
 
     if (error) {
-      errorMessage.value = error.message === 'Invalid login credentials' 
-        ? 'Email atau password salah.' 
+      loginAttempts.value++
+      errorMessage.value = error.message === 'Invalid login credentials'
+        ? 'Email atau password salah.'
         : error.message
+      resetTurnstile()
     } else {
       successMessage.value = 'Berhasil masuk! Mengarahkan ke dashboard...'
       setTimeout(() => {
@@ -128,6 +145,7 @@ async function handleLogin() {
     }
   } catch (e: any) {
     errorMessage.value = e.message || 'Terjadi kesalahan saat masuk.'
+    resetTurnstile()
   } finally {
     isLoading.value = false
   }
@@ -136,7 +154,7 @@ async function handleLogin() {
 async function loginWithGoogle() {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -144,7 +162,7 @@ async function loginWithGoogle() {
         redirectTo: `${window.location.origin}/dashboard`
       }
     })
-    
+
     if (error) {
       errorMessage.value = error.message
       isLoading.value = false
@@ -158,7 +176,7 @@ async function loginWithGoogle() {
 async function loginWithApple() {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
@@ -166,7 +184,7 @@ async function loginWithApple() {
         redirectTo: `${window.location.origin}/dashboard`
       }
     })
-    
+
     if (error) {
       errorMessage.value = error.message
       isLoading.value = false
@@ -300,6 +318,12 @@ async function loginWithApple() {
 .field-input::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+.turnstile-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
 }
 
 .btn-submit {

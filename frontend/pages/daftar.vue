@@ -79,7 +79,11 @@
           />
         </div>
 
-        <button class="btn-submit" type="submit" :disabled="isLoading">
+        <div class="turnstile-wrap">
+          <div id="turnstile-register"></div>
+        </div>
+
+        <button class="btn-submit" type="submit" :disabled="isLoading || !captchaVerified">
           <span v-if="isLoading" class="spinner"></span>
           <span v-else>Daftar Akun Gratis</span>
         </button>
@@ -116,6 +120,7 @@
 const config = useRuntimeConfig()
 const appName = config.public.appName
 const appLogo = config.public.appLogo
+const turnstileSiteKey = config.public.turnstileSiteKey
 
 useHead({
   title: 'Daftar Akun Baru'
@@ -123,6 +128,7 @@ useHead({
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+const { renderTurnstile, resetTurnstile, token: captchaToken, isVerified: captchaVerified } = useTurnstile()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -134,9 +140,17 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+onMounted(() => {
+  renderTurnstile("turnstile-register", turnstileSiteKey)
+})
+
 async function handleRegister() {
   if (!email.value || !password.value || !firstName.value) {
     errorMessage.value = 'Silakan lengkapi nama depan, email, dan password Anda.'
+    return
+  }
+  if (!captchaToken.value) {
+    errorMessage.value = 'Mohon selesaikan verifikasi keamanan di bawah.'
     return
   }
 
@@ -149,6 +163,7 @@ async function handleRegister() {
       email: email.value,
       password: password.value,
       options: {
+        captchaToken: captchaToken.value,
         data: {
           first_name: firstName.value,
           last_name: lastName.value,
@@ -161,6 +176,7 @@ async function handleRegister() {
 
     if (error) {
       errorMessage.value = error.message
+      resetTurnstile()
     } else {
       successMessage.value = 'Pendaftaran berhasil! Silakan cek email Anda untuk konfirmasi, atau masuk menggunakan akun Anda.'
       // Reset form
@@ -169,9 +185,11 @@ async function handleRegister() {
       email.value = ''
       phone.value = ''
       password.value = ''
+      resetTurnstile()
     }
   } catch (e: any) {
     errorMessage.value = e.message || 'Terjadi kesalahan saat mendaftar.'
+    resetTurnstile()
   } finally {
     isLoading.value = false
   }
@@ -180,7 +198,7 @@ async function handleRegister() {
 async function loginWithGoogle() {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -188,7 +206,7 @@ async function loginWithGoogle() {
         redirectTo: `${window.location.origin}/dashboard`
       }
     })
-    
+
     if (error) {
       errorMessage.value = error.message
       isLoading.value = false
@@ -202,7 +220,7 @@ async function loginWithGoogle() {
 async function loginWithApple() {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
@@ -210,7 +228,7 @@ async function loginWithApple() {
         redirectTo: `${window.location.origin}/dashboard`
       }
     })
-    
+
     if (error) {
       errorMessage.value = error.message
       isLoading.value = false
@@ -334,6 +352,12 @@ async function loginWithApple() {
 .field-input::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+.turnstile-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
 }
 
 .btn-submit {
