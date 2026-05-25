@@ -40,24 +40,29 @@ export interface Listing {
   imageUrl?: string
 }
 
-// Create DB
-export const db = new Dexie('GedoongDB') as Dexie & {
+// Create DB safely for both client (browser) and server (SSR)
+export const db = (typeof window !== 'undefined'
+  ? new Dexie('GedoongDB')
+  : {} as any) as Dexie & {
   deals: EntityTable<Deal, 'id'>
   kliens: EntityTable<Klien, 'id'>
   komisi: EntityTable<Komisi, 'id'>
   listings: EntityTable<Listing, 'id'>
 }
 
-// Define Schema
-db.version(3).stores({
-  deals: '++id, stage, order', 
-  kliens: '++id, pipeline',
-  komisi: '++id, status',
-  listings: '++id, tipe, status'
-})
+// Define Schema only on client-side
+if (typeof window !== 'undefined') {
+  db.version(3).stores({
+    deals: '++id, stage, order', 
+    kliens: '++id, pipeline',
+    komisi: '++id, status',
+    listings: '++id, tipe, status'
+  })
+}
 
 // Seed Initial Data
 export async function seedDb() {
+  if (typeof window === 'undefined') return;
   const dealsCount = await db.deals.count()
   if (dealsCount === 0) {
     await db.deals.bulkAdd([
